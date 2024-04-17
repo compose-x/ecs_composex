@@ -45,7 +45,7 @@ class ServiceSecurityGroup:
             Tags=Tags(
                 {
                     "Name": Sub(
-                        f"${family.logical_name}-${{STACK_NAME}}",
+                        f"{family.logical_name}-${{STACK_NAME}}",
                         STACK_NAME=define_stack_name(),
                     ),
                     "compose-x:family-name": family.name,

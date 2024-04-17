@@ -2,6 +2,44 @@
 History
 =======
 
+1.1.0 (2024-04-11)
+====================
+
+Major change
+--------------
+
+The services security groups now are created in a stack off the root stack to allow creating services
+to services ingress rules early. This is required to get Service Connect working properly, as some
+services depend on each other early.
+
+
+* f1facf12 - x-elbvs docs: Small corrections and adding short example of lookup (John "Preston" Mille)
+* 6e5e6d5a - Fixing up tidy function validation (#749) (John Preston)
+* ada6d5f2 - Bump to 1.1.0-rc1 (John "Preston" Mille)
+* 33130390 - Feature - ECS Service Connect (#745) (John Preston)
+* ca6923cd - Security groups at root-stack level specifically for service-to-service (#747) (John Preston)
+* fee1861c - Fixing up docs build (#744) (John Preston)
+
+
+1.0.0 (2024-03-08)
+==================
+
+4th year release. The structure of the services and resources is stable.
+The major change is for resources.Services no longer takes in a list, but instead
+unique entries in the form of objects.
+
+0.25.0 was also released at that date as a way to close up the 0.x series.
+
+
+* baaf43b3 - Working composable environment variables (#743) (John Preston)
+* 766907d0 - Needs further rework, but patches exception (#739) (John Preston)
+* fd99795f - Fixing up volumes mounts when using hosts (#695) (John Preston)
+* c5d250d8 - x-elbv2.loadbalancer lookup (#734) (John Preston)
+* f7fc4246 - Update NLB Health check parameters to match docs, allow NLB un/healthy counts to be different (#733) (Louis Mollick)
+* 3b465702 - Randomizing base number for LB rule to allow for updates (#729) (John Preston)
+* 9c3be5bf - NLBs without EIPs, Retain EIPs (#726) (John Preston)
+
+
 0.24.0 (2023-11-21)
 ===================
 
