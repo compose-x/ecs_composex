@@ -111,6 +111,11 @@
           "type": "string",
           "maxLength": 64,
           "description": "Optional - Set the name of the service as it appears in the CloudMap namespace"
+        },
+        "appProtocol": {
+          "description": "https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_PortMapping.html",
+          "type": "string",
+          "pattern": "http|http2|grpc"
         }
       },
       "patternProperties": {

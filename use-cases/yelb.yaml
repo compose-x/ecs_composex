@@ -17,6 +17,7 @@ services:
       - 80
     environment:
       - UI_ENV=prod
+      - APP_SERVER=yelb-appserver
     networks:
       - public
     x-network:
@@ -39,6 +40,8 @@ services:
     environment:
       redishost: redis-server
       yelbdbhost: yelb-db
+      YELB_DB_SERVER: yelb-db
+      YELB_REDIS_SERVER: redis-server
     x-network:
       Ingress:
         Services:
@@ -48,7 +51,7 @@ services:
           service_ports:
             tcp_4567:
               DnsName: yelb-appserver
-              CloudMapServiceName: yelb-appserver
+              CloudMapServiceName: yelb-appservera
           x-cloudmap: PrivateNamespace
 
 

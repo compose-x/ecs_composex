@@ -904,6 +904,9 @@ class ComposeService:
                                     service_port,
                                     f"{protocol.lower()}_{target_port}",
                                 ),
+                                AppProtocol=set_else_none(
+                                    "app_protocol", target_port, NoValue
+                                ),
                             )
                         )
                 else:
