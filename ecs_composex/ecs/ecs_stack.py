@@ -67,25 +67,31 @@ def initialize_family_services(
 
 
 def handle_families_dependencies(
-    settings: ComposeXSettings, families_post: list
+    settings: ComposeXSettings, families_post: list[tuple[str, str]]
 ) -> None:
     """
-    Function to handle family to family services based on docker compose depends_on
-
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param list families_post:
+    Function to handle family to family services based on docker compose depends_on.
+    Given the stack name and the family (services) name can be different due to special chars,
+    we need to evaluate each of the families for both names to make sure to find it.
     """
-    for family in families_post:
-        for family_name in settings.families[family].services_depends_on:
-            if family_name not in families_post:
+    for family_def in families_post:
+        _family_title, _family_name = family_def
+        for family_name in settings.families[_family_title].services_depends_on:
+            for __family_title, __family_def in settings.families.items():
+                if __family_def.name == family_name:
+                    family_title = __family_title
+                    break
+            else:
                 continue
             if (
-                family_name not in settings.families[family].stack.DependsOn
-                and family_name != settings.families[family].name
+                family_title not in settings.families[_family_title].stack.DependsOn
+                and family_title != settings.families[_family_title].name
             ):
-                LOG.info(f"Adding dependency between {family_name} and {family}")
-                settings.families[family].stack.DependsOn.append(
-                    settings.families[family_name].stack.title
+                LOG.info(
+                    f"Adding dependency between {family_name}|{family_title} and {_family_name}|{_family_title}"
+                )
+                settings.families[_family_title].stack.DependsOn.append(
+                    settings.families[family_title].stack.title
                 )
 
 
@@ -133,7 +139,7 @@ def add_compose_families(
         family.validate_compute_configuration_for_task(settings)
 
     families_stacks = [
-        family
+        (family, settings.families[family].name)
         for family in settings.root_stack.stack_template.resources
         if (
             family in settings.families
