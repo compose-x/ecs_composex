@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from ecs_composex.compose.compose_services import ComposeService
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.common.stacks import ComposeXStack
+    from troposphere.ecs import PortMapping
     from ecs_composex.ecs_ingress.ecs_ingress_stack import XStack as EcsIngressStack
 
 from json import dumps
@@ -318,6 +319,21 @@ def find_namespace(
     return namespace.get_resource_attribute_value(parameter, family)[0]
 
 
+def find_port_mapping(port_name, family: ComposeFamily) -> PortMapping | None:
+    """
+    Goes over all the services/containers of the task definition and over each PortMapping of the container.
+    If the port name matches, we have found the PortMapping
+    """
+    for service in family.ordered_services:
+        port_mappings = getattr(service.container_definition, "PortMappings", [])
+        if not port_mappings:
+            continue
+        for _port_mapping in port_mappings:
+            if _port_mapping.Name == port_name:
+                return _port_mapping
+    return
+
+
 def set_ecs_connect_from_macro(
     family: ComposeFamily,
     service: ComposeService,
@@ -347,8 +363,19 @@ def set_ecs_connect_from_macro(
                 f"No port called {port_name} in family {family.name}",
                 [_port["name"] for _port in family.service_networking.ports],
             )
-
         dns_name = set_else_none("DnsName", connect_config, None)
+        app_protocol = set_else_none("appProtocol", connect_config, NoValue)
+        valid_protocols: list[str] = ["http", "http2", "grpc"]
+        if (
+            not isinstance(app_protocol, str) and app_protocol not in valid_protocols
+        ) and app_protocol is not NoValue:
+            raise ValueError(
+                "appProtocol must be one of", valid_protocols, "got", app_protocol
+            )
+        if "appProtocol" not in the_port:
+            the_port["appProtocol"] = app_protocol
+        port_mapping: PortMapping = find_port_mapping(the_port["name"], family)
+        setattr(port_mapping, "AppProtocol", app_protocol)
         client_aliases = NoValue
         if dns_name:
             client_aliases = [
