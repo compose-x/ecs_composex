@@ -6,11 +6,13 @@ x-cloudmap:
     Name: compose-x.internal
 
 networks:
+  local:
   public:
     x-vpc: PublicSubnets
 services:
   yelb-ui:
     image: mreferre/yelb-ui:0.10
+    restart: unless-stopped
     depends_on:
       - yelb-appserver
     ports:
@@ -20,6 +22,7 @@ services:
       - APP_SERVER=yelb-appserver
     networks:
       - public
+      - local
     x-network:
       AssignPublicIp: true
       x-ecs_connect:
@@ -32,6 +35,8 @@ services:
 
   yelb-appserver:
     image: mreferre/yelb-appserver:0.7
+    networks:
+    - local
     depends_on:
       - redis-server
       - yelb-db
@@ -59,6 +64,8 @@ services:
     image: redis:4.0.2
     ports:
       - 6379:6379
+    networks:
+    - local
     x-network:
       x-ecs_connect:
         MacroParameters:
@@ -75,6 +82,8 @@ services:
     image: mreferre/yelb-db:0.6
     ports:
       - 5432:5432
+    networks:
+    - local
     x-network:
       x-ecs_connect:
         MacroParameters:
