@@ -32,6 +32,7 @@
     ]
   },
   "PowerUser": {
+    "Effect": "Allow",
     "NotAction": [
       "dynamodb:CreateTable",
       "dynamodb:DeleteTable",
