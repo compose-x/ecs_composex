@@ -102,4 +102,4 @@ class FluentBitConfig(ManagedSidecar):
         patch_fluent_service(
             fluent_service, shared_volume, name, shared_volume.name, mount_path
         )
-        fluent_service.depends_on.append(self.name)
+        fluent_service.depends_on[self.name] = {"condition": "service_started"}

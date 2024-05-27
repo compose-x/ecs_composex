@@ -76,7 +76,7 @@ def handle_families_dependencies(
     """
     for family_def in families_post:
         _family_title, _family_name = family_def
-        for family_name in settings.families[_family_title].services_depends_on:
+        for family_name in settings.families[_family_title].services_depends_on.keys():
             for __family_title, __family_def in settings.families.items():
                 if __family_def.name == family_name:
                     family_title = __family_title

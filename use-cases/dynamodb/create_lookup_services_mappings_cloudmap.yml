@@ -82,8 +82,8 @@ x-dynamodb:
   tableC:
     Lookup:
       Tags:
-        - name: tableC
-        - createdbycomposex: 'True'
+        name: tableC
+        createdbycomposex: 'True'
     Services:
       app03:
         Access: RW
@@ -101,8 +101,8 @@ x-dynamodb:
   tableD:
     Lookup:
       Tags:
-        - name: tableC
-        - createdbycomposex: 'False'
+        name: tableC
+        createdbycomposex: 'False'
     Services:
       app03:
         Access: RW
