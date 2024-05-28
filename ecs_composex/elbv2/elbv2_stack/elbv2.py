@@ -76,9 +76,9 @@ class Elbv2(NetworkXResource):
         if (
             not keyisset("Listeners", definition)
             and not self.lookup
-            or (self.lookup and not keyisset("Listeners", self.lookup))
+            or (self.lookup and not keyisset("Listeners", self.definition))
         ):
-            raise KeyError("You must specify at least one Listener for a LB.", name)
+            raise KeyError("You must specify at least one new Listener for a LB.", name)
 
         self.cloud_control_attributes_mapping = LB_CLOUD_CONTROL_ATTRIBUTES
         self.no_allocate_eips: bool = keyisset("NoAllocateEips", self.settings)
