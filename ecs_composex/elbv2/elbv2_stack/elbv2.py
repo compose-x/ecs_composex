@@ -73,12 +73,19 @@ class Elbv2(NetworkXResource):
         self.lookup_listeners: dict[int, LookupListener] = {}
         self.target_groups: list[MergedTargetGroup] = []
         super().__init__(name, definition, module, settings)
+        if not keyisset("Listeners", definition) and not self.lookup:
+            raise KeyError(
+                "You must specify at least one new Listener for a new LB.", name
+            )
+
         if (
-            not keyisset("Listeners", definition)
-            and not self.lookup
-            or (self.lookup and not keyisset("Listeners", self.definition))
+            self.lookup
+            and not keyisset("Listeners", self.definition)
+            and not keyisset("Listeners", self.lookup)
         ):
-            raise KeyError("You must specify at least one new Listener for a LB.", name)
+            raise KeyError(
+                "When looking up LB, you must either create a new Listener or Lookup and existing one."
+            )
 
         self.cloud_control_attributes_mapping = LB_CLOUD_CONTROL_ATTRIBUTES
         self.no_allocate_eips: bool = keyisset("NoAllocateEips", self.settings)
