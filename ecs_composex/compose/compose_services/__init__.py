@@ -133,7 +133,12 @@ class ComposeService:
         self.cfn_environment = (
             import_env_variables(self.environment) if self.environment else NoValue
         )
-        self.depends_on = set_else_none("depends_on", self.definition, [], False)
+        self.depends_on: dict = set_else_none("depends_on", self.definition, {}, False)
+        if isinstance(self.depends_on, list):
+            services_names = [_s_name for _s_name in self.depends_on]
+            self.depends_on: dict = {}
+            for service_name in services_names:
+                self.depends_on[service_name] = {"condition": "service_started"}
         self.docker_labels: dict = {}
         self.import_docker_labels(self._definition)
 

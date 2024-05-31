@@ -78,7 +78,7 @@ class ComposeFamily:
         self.managed_sidecars = []
         self.name = family_name
         self.family_hostname = self.name.replace("_", "-").lower()
-        self.services_depends_on = []
+        self.services_depends_on: dict = {}
         self.template = set_template(self)
         self.stack: ServiceStack = ServiceStack(
             self.logical_name,
@@ -585,9 +585,15 @@ class ComposeFamily:
         """
         for service in self.services:
             if service.depends_on:
-                for service_depends_on in service.depends_on:
-                    if service_depends_on not in self.services_depends_on:
-                        self.services_depends_on.append(service_depends_on)
+                if not isinstance(service.depends_on, dict):
+                    raise TypeError(
+                        "Service depends_on not a dict",
+                        service.name,
+                        service.depends_on,
+                    )
+                for service_name, condition_def in service.depends_on.items():
+                    if service_name not in self.services_depends_on:
+                        self.services_depends_on[service_name] = {}
 
     @property
     def task_ephemeral_storage(self) -> int:

@@ -186,7 +186,7 @@ class FluentBit(ManagedSidecar):
             if service is self:
                 continue
             if self.name not in service.depends_on:
-                service.depends_on.append(self.name)
+                service.depends_on[self.name] = {"condition": "service_healthy"}
                 LOG.info(
                     f"{self.family.name}.{service.name} - Added {self.name} as startup dependency"
                 )

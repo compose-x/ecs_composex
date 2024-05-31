@@ -65,13 +65,13 @@ class ManagedSidecar(ComposeService):
         for service in self.family.ordered_services:
             if is_dependency:
                 if self.name not in service.depends_on:
-                    service.depends_on.append(self.name)
+                    service.depends_on[self.name] = {"condition": "service_started"}
                     LOG.info(
                         f"{self.family.name}.{service.name} - Added {self.name} as startup dependency"
                     )
             else:
                 if service.name not in self.depends_on:
-                    self.depends_on.append(service.name)
+                    self.depends_on[service.name] = {"condition": "service_started"}
                     LOG.info(
                         f"{self.family.name}.{self.name} - Added {service.name} as startup dependency"
                     )
