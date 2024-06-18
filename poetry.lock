@@ -144,17 +144,17 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.34.126"
+version = "1.34.128"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.34.126-py3-none-any.whl", hash = "sha256:7f676daef674fe74f34ce4063228eccc6e60c811f574720e31f230296c4bf29a"},
-    {file = "boto3-1.34.126.tar.gz", hash = "sha256:7e8418b47dd43954a9088d504541bed8a42b6d06e712d02befba134c1c4d7c6d"},
+    {file = "boto3-1.34.128-py3-none-any.whl", hash = "sha256:a048ff980a81cd652724a73bc496c519b336fabe19cc8bfc6c53b2ff6eb22c7b"},
+    {file = "boto3-1.34.128.tar.gz", hash = "sha256:43a6e99f53a8d34b3b4dbe424dbcc6b894350dc41a85b0af7c7bc24a7ec2cead"},
 ]
 
 [package.dependencies]
-botocore = ">=1.34.126,<1.35.0"
+botocore = ">=1.34.128,<1.35.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -163,13 +163,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.34.126"
-description = "Type annotations for boto3 1.34.126 generated with mypy-boto3-builder 7.24.0"
+version = "1.34.128"
+description = "Type annotations for boto3 1.34.128 generated with mypy-boto3-builder 7.24.0"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3_stubs-1.34.126-py3-none-any.whl", hash = "sha256:b0c92d5804cefde780359d5a752e754d1957d6906f5dc76661a35a400bc815e0"},
-    {file = "boto3_stubs-1.34.126.tar.gz", hash = "sha256:10454ca5b8bbde8ed538c05e68a1a1b67bc932267ecaaf4ed58af65bcfd952e8"},
+    {file = "boto3_stubs-1.34.128-py3-none-any.whl", hash = "sha256:cac2da12240412848c01c5c7ade6a50cf79818aeb8fece2b7b6d2fbab62b64bf"},
+    {file = "boto3_stubs-1.34.128.tar.gz", hash = "sha256:f4dff208a9cf00797a6c2b1847ab28d0b931a86a41bf00c8e4f55b37fb6611a5"},
 ]
 
 [package.dependencies]
@@ -229,7 +229,7 @@ bedrock-agent = ["mypy-boto3-bedrock-agent (>=1.34.0,<1.35.0)"]
 bedrock-agent-runtime = ["mypy-boto3-bedrock-agent-runtime (>=1.34.0,<1.35.0)"]
 bedrock-runtime = ["mypy-boto3-bedrock-runtime (>=1.34.0,<1.35.0)"]
 billingconductor = ["mypy-boto3-billingconductor (>=1.34.0,<1.35.0)"]
-boto3 = ["boto3 (==1.34.126)", "botocore (==1.34.126)"]
+boto3 = ["boto3 (==1.34.128)", "botocore (==1.34.128)"]
 braket = ["mypy-boto3-braket (>=1.34.0,<1.35.0)"]
 budgets = ["mypy-boto3-budgets (>=1.34.0,<1.35.0)"]
 ce = ["mypy-boto3-ce (>=1.34.0,<1.35.0)"]
@@ -578,13 +578,13 @@ xray = ["mypy-boto3-xray (>=1.34.0,<1.35.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.34.126"
+version = "1.34.128"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.34.126-py3-none-any.whl", hash = "sha256:7eff883c638fe30e0b036789df32d851e093d12544615a3b90062b42ac85bdbc"},
-    {file = "botocore-1.34.126.tar.gz", hash = "sha256:7a8ccb6a7c02456757a984a3a44331b6f51c94cb8b9b287cd045122fd177a4b0"},
+    {file = "botocore-1.34.128-py3-none-any.whl", hash = "sha256:db67fda136c372ab3fa432580c819c89ba18d28a6152a4d2a7ea40d44082892e"},
+    {file = "botocore-1.34.128.tar.gz", hash = "sha256:8d8e03f7c8c080ecafda72036eb3b482d649f8417c90b5dca33b7c2c47adb0c9"},
 ]
 
 [package.dependencies]
@@ -600,13 +600,13 @@ crt = ["awscrt (==0.20.11)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.34.126"
+version = "1.34.128"
 description = "Type annotations and code completion for botocore"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "botocore_stubs-1.34.126-py3-none-any.whl", hash = "sha256:f579c919cce6f6b66dd345d43048b718953dbe143d9d0196b41ab5fde16b576d"},
-    {file = "botocore_stubs-1.34.126.tar.gz", hash = "sha256:9305857fdafda1d8770307986489fc3a7b792cd505b6e56ba4306522b420b777"},
+    {file = "botocore_stubs-1.34.128-py3-none-any.whl", hash = "sha256:66ed60ecd4433374a20783ea0ca0486019a0ec020d59f830ab4f418926d888ee"},
+    {file = "botocore_stubs-1.34.128.tar.gz", hash = "sha256:00e5910b3afb76422208d7ab6c3f3b2d4125e3203e15bf47c0ff5f9e38f00c19"},
 ]
 
 [package.dependencies]
@@ -1279,13 +1279,9 @@ files = [
     {file = "lxml-5.2.2-cp36-cp36m-win_amd64.whl", hash = "sha256:edcfa83e03370032a489430215c1e7783128808fd3e2e0a3225deee278585196"},
     {file = "lxml-5.2.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:28bf95177400066596cdbcfc933312493799382879da504633d16cf60bba735b"},
     {file = "lxml-5.2.2-cp37-cp37m-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:3a745cc98d504d5bd2c19b10c79c61c7c3df9222629f1b6210c0368177589fb8"},
-    {file = "lxml-5.2.2-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1b590b39ef90c6b22ec0be925b211298e810b4856909c8ca60d27ffbca6c12e6"},
     {file = "lxml-5.2.2-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b336b0416828022bfd5a2e3083e7f5ba54b96242159f83c7e3eebaec752f1716"},
-    {file = "lxml-5.2.2-cp37-cp37m-manylinux_2_28_aarch64.whl", hash = "sha256:c2faf60c583af0d135e853c86ac2735ce178f0e338a3c7f9ae8f622fd2eb788c"},
     {file = "lxml-5.2.2-cp37-cp37m-manylinux_2_28_x86_64.whl", hash = "sha256:4bc6cb140a7a0ad1f7bc37e018d0ed690b7b6520ade518285dc3171f7a117905"},
-    {file = "lxml-5.2.2-cp37-cp37m-musllinux_1_1_aarch64.whl", hash = "sha256:7ff762670cada8e05b32bf1e4dc50b140790909caa8303cfddc4d702b71ea184"},
     {file = "lxml-5.2.2-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:57f0a0bbc9868e10ebe874e9f129d2917750adf008fe7b9c1598c0fbbfdde6a6"},
-    {file = "lxml-5.2.2-cp37-cp37m-musllinux_1_2_aarch64.whl", hash = "sha256:a6d2092797b388342c1bc932077ad232f914351932353e2e8706851c870bca1f"},
     {file = "lxml-5.2.2-cp37-cp37m-musllinux_1_2_x86_64.whl", hash = "sha256:60499fe961b21264e17a471ec296dcbf4365fbea611bf9e303ab69db7159ce61"},
     {file = "lxml-5.2.2-cp37-cp37m-win32.whl", hash = "sha256:d9b342c76003c6b9336a80efcc766748a333573abf9350f4094ee46b006ec18f"},
     {file = "lxml-5.2.2-cp37-cp37m-win_amd64.whl", hash = "sha256:b16db2770517b8799c79aa80f4053cd6f8b716f21f8aca962725a9565ce3ee40"},
@@ -1469,13 +1465,13 @@ typing-extensions = {version = ">=4.1.0", markers = "python_version < \"3.12\""}
 
 [[package]]
 name = "mypy-boto3-ec2"
-version = "1.34.125"
-description = "Type annotations for boto3.EC2 1.34.125 service generated with mypy-boto3-builder 7.24.0"
+version = "1.34.127"
+description = "Type annotations for boto3.EC2 1.34.127 service generated with mypy-boto3-builder 7.24.0"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "mypy_boto3_ec2-1.34.125-py3-none-any.whl", hash = "sha256:b0e0aba64085f4a917e49fa5ce47654f04deaf597a197e90518c0f1f61ec6e31"},
-    {file = "mypy_boto3_ec2-1.34.125.tar.gz", hash = "sha256:1a7adf63542dce2e3bdf86be902fdea49d4c8c52f808eb56c13c6eefc7a31dc4"},
+    {file = "mypy_boto3_ec2-1.34.127-py3-none-any.whl", hash = "sha256:51be8edf3a3c399633463a045d6572038de16d02cae0c98676393a820d0bad31"},
+    {file = "mypy_boto3_ec2-1.34.127.tar.gz", hash = "sha256:0c51cfba264d8d78c5a79ad0b818a4400ea4c31a5f30832460d259eb713c8b08"},
 ]
 
 [package.dependencies]
@@ -2440,6 +2436,23 @@ files = [
 brotli = ["brotli (==1.0.9)", "brotli (>=1.0.9)", "brotlicffi (>=0.8.0)", "brotlipy (>=0.6.0)"]
 secure = ["certifi", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "ipaddress", "pyOpenSSL (>=0.14)", "urllib3-secure-extra"]
 socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
+
+[[package]]
+name = "urllib3"
+version = "2.2.2"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "urllib3-2.2.2-py3-none-any.whl", hash = "sha256:a448b2f64d686155468037e1ace9f2d2199776e17f0a46610480d311f73e3472"},
+    {file = "urllib3-2.2.2.tar.gz", hash = "sha256:dd505485549a7a552833da5e6063639d0d177c04f23bc3864e41e5dc5f612168"},
+]
+
+[package.extras]
+brotli = ["brotli (>=1.0.9)", "brotlicffi (>=0.8.0)"]
+h2 = ["h2 (>=4,<5)"]
+socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
+zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "virtualenv"
