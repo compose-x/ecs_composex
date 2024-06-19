@@ -307,7 +307,9 @@ class ComposeFamily:
                     Value=Ref(self.service_networking.security_group.parameter.title),
                 )
             )
-        if ecs_params.SERVICE_SUBNETS.title in self.stack.stack_template.parameters:
+        if self.service_networking.subnets_output and isinstance(
+            self.service_networking.subnets_output, Ref
+        ):
             self.outputs.append(
                 CfnOutput(
                     ecs_params.SERVICE_SUBNETS.title,
