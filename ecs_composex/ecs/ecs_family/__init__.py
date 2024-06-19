@@ -300,15 +300,20 @@ class ComposeFamily:
         """
         Generates a list of CFN outputs for the ECS Service and Task Definition
         """
-        if self.service_networking.security_group:
+        if (
+            self.service_compute.launch_type != "EXTERNAL"
+            and self.service_networking.security_group
+        ):
             self.outputs.append(
                 CfnOutput(
                     f"{self.logical_name}GroupId",
                     Value=Ref(self.service_networking.security_group.parameter.title),
                 )
             )
-        if self.service_networking.subnets_output and isinstance(
-            self.service_networking.subnets_output, Ref
+        if (
+            self.service_networking.subnets_output
+            and isinstance(self.service_networking.subnets_output, Ref)
+            and self.service_compute.launch_type != "EXTERNAL"
         ):
             self.outputs.append(
                 CfnOutput(

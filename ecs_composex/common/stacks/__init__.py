@@ -285,6 +285,13 @@ class ComposeXStack(Stack):
             APP_SUBNETS,
         ]
         add_parameters(self.stack_template, default_parameters)
+        print(
+            "STACK TEMPLATE?",
+            self.stack_template,
+            type(self.stack_template),
+            self.stack_template.parameters,
+        )
+        print("ADDED DEFAULT PARAMS")
         if (
             self.parent_stack
             and self.parent_stack is not None
