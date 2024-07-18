@@ -62,6 +62,36 @@
           "default": false
         }
       }
+    },
+    "CapacityProviders": {
+      "type": "object",
+      "description": "Allows to define one or more Capacity Providers that will re-use or create ASGs.",
+      "patternProperties": {
+        "x-": {},
+        "^[a-zA-Z0-9-]+$": {
+          "$ref": "#/properties/CapacityProvider"
+        }
+      }
+    },
+    "CapacityProvider": {
+      "type": "object",
+      "description": "Capacity Provider definition",
+      "properties": {
+        "LaunchTemplateArn": {
+          "type": "string",
+          "description": "Set the ARN (with version) of the LaunchTemplate that you want to use for this Capacity Provider. If not set, new one will be created.",
+          "pattern": "^arn:aws[\\S]+$"
+        },
+        "AutoscalingGroupArn": {
+          "type": "string",
+          "description": "Set to the ARN of the AutoScaling group you wish to re-use for this CapacityProvider. If not set, a new one will be created."
+        },
+        "InstanceType": {
+          "type": "string",
+          "description": "For new LT & ASG, set the instance type you wish to use.",
+          "default": "t4g.medium"
+        }
+      }
     }
   },
   "oneOf": [
