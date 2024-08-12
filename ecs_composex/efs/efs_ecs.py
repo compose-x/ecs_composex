@@ -234,7 +234,7 @@ def looked_up_efs_family_hook(
     sg_id = efs.add_attribute_to_another_stack(family.stack, FS_MNT_PT_SG_ID, settings)
     add_parameters(family.template, [sg_id["ImportParameter"]])
     add_security_group_ingress(
-        family.stack, efs.logical_name, Ref(sg_id["ImportParameter"]), 2049
+        family, efs.logical_name, Ref(sg_id["ImportParameter"]), 2049
     )
     family.stack.Parameters.update(
         {sg_id["ImportParameter"].title: sg_id["ImportValue"]}
