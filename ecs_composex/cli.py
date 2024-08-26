@@ -121,6 +121,13 @@ def main_parser():
         dest="BucketName",
     )
     base_command_parser.add_argument(
+        "--s3-prefix",
+        type=str,
+        default="",
+        help="Path within the bucket in which to store the files. Use with caution, override possible",
+        dest="S3PrefixPath",
+    )
+    base_command_parser.add_argument(
         "--role-arn",
         dest=ComposeXSettings.arn_arg,
         help="Allow you to run API calls using a specific IAM role, within same or for cross-account",

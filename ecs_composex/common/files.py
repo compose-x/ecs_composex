@@ -4,6 +4,14 @@
 """
 Functions to manage a template and wheter it should be stored in S3
 """
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+
 import pprint
 from os.path import abspath
 
@@ -160,7 +168,7 @@ class FileArtifact:
     def __repr__(self):
         return self.file_path
 
-    def upload(self, settings):
+    def upload(self, settings: ComposeXSettings):
         """
         Method to handle uploading the files to S3.
         """
