@@ -143,6 +143,11 @@ If you have not already, let's create a new ECR Repository, and let's log into i
 
 .. code-block::
 
+
+    # Define your region or default region
+
+    export AWS_DEFAULT_REGION=us-east-1
+
     # Create the new ECR Repository
     aws ecr create-repository --repository-name frontend
 
