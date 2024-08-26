@@ -236,13 +236,13 @@ class ComposeXStack(Stack):
                     )
         return params
 
-    def render(self, settings):
+    def render(self, settings: ComposeXSettings):
         """
         Function to use when the template is finalized and can be uploaded to S3.
         """
         LOG.debug(f"Rendering {self.title}")
         self.DependsOn = list(set(self.DependsOn))
-        template_file = FileArtifact(
+        template_file: FileArtifact = FileArtifact(
             file_name=self.file_name,
             template=self.stack_template,
             settings=settings,
@@ -251,6 +251,12 @@ class ComposeXStack(Stack):
         template_file.define_body()
         template_file.write(settings)
         setattr(self, "TemplateURL", template_file.file_path)
+        if not settings.upload and settings.bucket_name and settings.bucket_prefix_path:
+            setattr(
+                self,
+                "TemplateURL",
+                f"https://s3.amazonaws.com/{settings.bucket_name}/{settings.bucket_prefix_path}/{template_file.file_name}",
+            )
         if settings.upload:
             template_file.upload(settings)
             setattr(self, "TemplateURL", template_file.url)

@@ -77,6 +77,7 @@ class ComposeXSettings:
     command_arg = "command"
 
     bucket_arg = "BucketName"
+    bucket_prefix_path_arg: str = "S3PrefixPath"
     input_file_arg = "DockerComposeXFile"
     output_dir_arg = "OutputDirectory"
     format_arg = "TemplateFormat"
@@ -148,6 +149,11 @@ class ComposeXSettings:
         self.bucket_name = (
             None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
         )
+        self.bucket_prefix_path = set_else_none(self.bucket_prefix_path_arg, kwargs, "")
+        if self.bucket_prefix_path and self.bucket_prefix_path.startswith("/"):
+            self.bucket_prefix_path = self.bucket_prefix_path[1:]
+        if self.bucket_prefix_path.endswith("/"):
+            self.bucket_prefix_path = self.bucket_prefix_path[:-1]
         self.volumes = []
         self.services = []
         self.secrets = []
