@@ -191,7 +191,7 @@ In the spirit of override files, we create another file that is going to be used
           Scheme: internet-facing
           Type: application
         Services:
-          - name: frontend:frontend
+          frontend:frontend:
             port: 80
             protocol: HTTP
             healthcheck: 80:HTTP:/:200 # We expect port 80 with HTTP protocol to work and we expect a 200 OK return
