@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 from troposphere import If, NoValue
 
+from ecs_composex.common.logging import LOG
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 
 
@@ -44,9 +45,6 @@ def handle_multi_services(sidecar_used_memory: int, family: ComposeFamily) -> No
     """
     Identifies the essential containers. If there is only one, we assume that's the one
     that would make use of the left-over CPU/RAM from the Fargate profile
-
-    :param int sidecar_used_memory:
-    :param ComposeFamily family:
     """
     essential_containers = []
     containers_used_ram = 0
@@ -76,8 +74,6 @@ def unlock_compute_for_main_container(family: ComposeFamily) -> None:
 
     This aims to identify the main service running in the family and grant it to us
     all unreserved CPU/RAM of the task
-
-    :param family:
     """
     if len(family.ordered_services) == 1 and not family.managed_sidecars:
         reset_for_single_main_container(
@@ -98,3 +94,9 @@ def unlock_compute_for_main_container(family: ComposeFamily) -> None:
             )
         else:
             handle_multi_services(sidecar_used_memory, family)
+    elif family.ordered_services and not family.managed_sidecars:
+        handle_multi_services(sidecar_used_memory, family)
+    else:
+        LOG.warning(
+            f"{family.name} - Unable to define services compute config to optimize."
+        )
