@@ -50,6 +50,7 @@ from ecs_composex.compose.compose_services.helpers import (
 from ecs_composex.compose.compose_volumes.services_helpers import map_volumes
 from ecs_composex.ecs.ecs_conditions import (
     IPC_FROM_HOST_CON_T,
+    USE_EXTERNAL_LT_T,
     USE_FARGATE_CON_T,
     USE_WINDOWS_OS_T,
 )
@@ -885,13 +886,15 @@ class ComposeService:
                     f" Skipping {self.name}.expose.{expose_port}"
                 )
 
-    def define_port_mappings(self) -> list:
+    def define_port_mappings(self, family: ComposeFamily) -> list:
         """
         Define the list of port mappings to use for either AWS VPC deployments or else (bridge etc).
         Not in use atm as AWS VPC is made mandatory
         """
         if self.container_definition:
-            service_port_mappings = getattr(self.container_definition, "PortMappings")
+            service_port_mappings: list[PortMapping] = getattr(
+                self.container_definition, "PortMappings"
+            )
         else:
             return []
         for protocol, mappings in self.ingress_mappings.items():
@@ -924,6 +927,17 @@ class ComposeService:
                         )
                     )
             self.handle_expose_ports(service_port_mappings)
+        if family and family.service_compute.launch_type == "EXTERNAL":
+            new_port_mappings: list[PortMapping] = []
+            for _port_mapping in service_port_mappings:
+                new_port_mappings.append(
+                    PortMapping(
+                        ContainerPort=_port_mapping.ContainerPort,
+                        HostPort=_port_mapping.HostPort,
+                        Protocol=_port_mapping.Protocol,
+                    )
+                )
+            return new_port_mappings
         return service_port_mappings
 
     def import_docker_labels(self, definition: dict):

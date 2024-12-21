@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_stack import ServiceStack
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
@@ -75,16 +76,16 @@ class XStack(ComposeXStack):
         stack_template = build_template(
             "Services SG for service-to-service communication"
         )
-        self.services_mappings: dict[str, ServiceSecurityGroup] = {}
+        self.services_mappings: dict[ComposeFamily, ServiceSecurityGroup] = {}
         add_parameters(stack_template, [CLUSTER_NAME, VPC_ID])
         super().__init__(name, stack_template, **kwargs)
 
         for family in settings.families.values():
             sg = ServiceSecurityGroup(family, self)
-            self.services_mappings[family.name] = sg
+            self.services_mappings[family] = sg
             add_outputs(stack_template, [sg.output])
 
-    def update_vpc_settings(self, vpc_stack: VpcStack):
+    def update_vpc_settings(self, vpc_stack: VpcStack, root_stack: ComposeXStack):
         if vpc_stack.vpc_resource and (
             vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
         ):
@@ -96,3 +97,14 @@ class XStack(ComposeXStack):
                 self.Parameters.update(
                     {VPC_ID.title: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
                 )
+        else:
+            for family, family_sg in self.services_mappings.items():
+                del family.stack.stack_template.parameters[family_sg.parameter.title]
+                root_service_stack: ServiceStack = root_stack.stack_template.resources[
+                    family.stack.title
+                ]
+                del root_service_stack.properties["Parameters"][
+                    family_sg.parameter.title
+                ]
+
+            del root_stack.stack_template.resources[self.name]

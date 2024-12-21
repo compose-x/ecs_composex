@@ -112,9 +112,9 @@ class ComposeXStack(Stack):
             raise TypeError(
                 "stack_template is", type(stack_template), "expected", Template
             )
-        self.stack_template = stack_template
+        self.stack_template: Template = stack_template
         if stack_parameters is None:
-            self.stack_parameters = {}
+            self.stack_parameters: dict = {}
         elif not isinstance(stack_parameters, dict):
             raise TypeError("parameters is", type(stack_parameters), "expected", dict)
         stack_kwargs = {x: kwargs[x] for x in self.props.keys() if x in kwargs}
