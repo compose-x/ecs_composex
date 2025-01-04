@@ -112,7 +112,7 @@ def add_compose_families(
                 family.iam_manager.task_role.name_param,
                 family.iam_manager.exec_role.arn_param,
                 family.iam_manager.exec_role.name_param,
-                families_sg_stack.services_mappings[family.name].parameter,
+                families_sg_stack.services_mappings[family].parameter,
             ],
         )
         family.stack.Parameters.update(
@@ -126,11 +126,9 @@ def add_compose_families(
                 family.iam_manager.exec_role.arn_param.title: family.iam_manager.exec_role.output_arn,
                 family.iam_manager.exec_role.name_param.title: family.iam_manager.exec_role.output_name,
                 ecs_params.SERVICE_HOSTNAME.title: family.family_hostname,
-                families_sg_stack.services_mappings[
-                    family.name
-                ].parameter.title: GetAtt(
-                    families_sg_stack.services_mappings[family.name].stack.title,
-                    f"Outputs.{families_sg_stack.services_mappings[family.name].parameter.title}",
+                families_sg_stack.services_mappings[family].parameter.title: GetAtt(
+                    families_sg_stack.services_mappings[family].stack.title,
+                    f"Outputs.{families_sg_stack.services_mappings[family].parameter.title}",
                 ),
             }
         )

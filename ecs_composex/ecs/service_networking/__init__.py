@@ -78,7 +78,7 @@ class ServiceNetworking:
         self.merge_networks()
         self.definition = merge_family_services_networking(family)
         self.security_group: ServiceSecurityGroup = families_sg_stack.services_mappings[
-            family.name
+            family
         ]
         self.extra_security_groups = [self.security_group.parameter]
         self._subnets = Ref(APP_SUBNETS)

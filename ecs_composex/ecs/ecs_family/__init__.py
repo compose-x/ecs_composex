@@ -422,7 +422,7 @@ class ComposeFamily:
                 setattr(
                     service.container_definition,
                     "PortMappings",
-                    service.define_port_mappings(),
+                    service.define_port_mappings(self),
                 )
 
     def init_network_settings(

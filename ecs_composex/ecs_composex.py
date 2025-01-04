@@ -310,7 +310,7 @@ def generate_full_template(settings: ComposeXSettings):
     set_ecs_cluster_identifier(settings.root_stack, settings)
     add_all_tags(settings.root_stack.stack_template, settings)
     set_all_mappings_to_root_stack(settings)
-    families_sg_stack.update_vpc_settings(vpc_stack)
+    families_sg_stack.update_vpc_settings(vpc_stack, settings.root_stack)
 
     for resource in settings.x_resources:
         if hasattr(resource, "post_processing") and hasattr(

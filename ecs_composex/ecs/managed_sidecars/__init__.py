@@ -53,7 +53,7 @@ class ManagedSidecar(ComposeService):
                     "awslogs-stream-prefix": self.name,
                 },
             )
-        self.define_port_mappings()
+        self.define_port_mappings(family)
         self.family.service_networking.merge_services_ports()
 
     def set_as_dependency_to_family_services(self, is_dependency: bool = False) -> None:

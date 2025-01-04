@@ -21,7 +21,8 @@ def finalize_network_settings(
     Evaluates the ECS Connect settings to be configured by the service.
     If there is a configuration to be set, ensures it's set on the ECS Service definition.
     """
-    family.service_networking.set_ecs_connect(settings)
+    if family.service_compute.launch_type != "EXTERNAL":
+        family.service_networking.set_ecs_connect(settings)
     if family.service_networking.ecs_connect_config and family.ecs_service:
         setattr(
             family.ecs_service.ecs_service,
