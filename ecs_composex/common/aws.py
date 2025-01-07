@@ -381,11 +381,13 @@ def get_change_set_status(client, change_set_name, settings):
     return status
 
 
-def plan(settings, root_stack):
+def plan(settings, root_stack, apply=None, cleanup=None):
     """
     Function to create a recursive change-set and return diffs
     :param ComposeXSettings settings:
     :param ComposeXStack root_stack:
+    :param apply: Optional[bool] - Whether to apply the change-set (True/False). Default is None (prompt user).
+    :param cleanup: Optional[bool] - Whether to clean up the change-set (True/False). Default is None (prompt user).
     :return:
     """
     validate_stack_availability(settings, root_stack)
@@ -408,14 +410,20 @@ def plan(settings, root_stack):
         )
         status = get_change_set_status(client, change_set_name, settings)
         if status:
-            apply_q = input("Want to apply? [yN]: ")
-            if apply_q in ["y", "Y", "YES", "Yes", "yes"]:
+            if apply is None:
+                apply_q = input("Want to apply? [yN]: ")
+                apply = apply_q.lower() in ["y", "yes"]
+
+            if apply:
                 client.execute_change_set(
                     ChangeSetName=change_set_name,
                     StackName=settings.name,
                     DisableRollback=settings.disable_rollback,
                 )
             else:
-                delete_q = input("Cleanup ChangeSet ? [yN]: ")
-                if delete_q in ["y", "Y", "YES", "Yes", "yes"]:
+                if cleanup is None:
+                    delete_q = input("Cleanup ChangeSet ? [yN]: ")
+                    cleanup = delete_q.lower() in ["y", "yes"]
+
+                if cleanup:
                     client.delete_stack(StackName=settings.name)
