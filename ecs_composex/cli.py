@@ -153,6 +153,20 @@ def main_parser():
     parser.add_argument(
         "--loglevel", type=str, help="Log level. Defaults to INFO", required=False
     )
+    base_command_parser.add_argument(
+        "--apply",
+        dest="apply",
+        help="Whether to apply the change-set automatically (True/False).",
+        required=False,
+        type=bool,
+    )
+    base_command_parser.add_argument(
+        "--cleanup",
+        dest="cleanup",
+        help="Whether to cleanup the change-set automatically (True/False).",
+        required=False,
+        type=bool,
+    )
     for command in ComposeXSettings.active_commands:
         cmd_parsers.add_parser(
             name=command["name"],
@@ -216,7 +230,7 @@ def main():
     if settings.deploy:
         deploy(settings, root_stack)
     elif settings.plan:
-        plan(settings, root_stack)
+        plan(settings, root_stack, apply=args.apply, cleanup=args.cleanup)
     return 0
 
 
