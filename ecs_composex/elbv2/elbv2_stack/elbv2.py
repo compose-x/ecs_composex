@@ -199,8 +199,9 @@ class Elbv2(NetworkXResource):
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         for family_combo_name, service_def in self.services.items():
-            service_name = family_combo_name.split(":")[-1]
-            family_name = NONALPHANUM.sub("", family_combo_name.split(":")[0])
+            family_combo_parts: list[str] = family_combo_name.split(":")
+            family_name: str = NONALPHANUM.sub("", family_combo_parts[0])
+            service_name: str = family_combo_parts[1]
             LOG.info(
                 f"{self.module.res_key}.{self.name} - Adding target {family_name}:{service_name}"
             )
