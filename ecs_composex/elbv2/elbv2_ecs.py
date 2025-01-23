@@ -524,6 +524,9 @@ def define_service_target_group(
         if not keyisset("protocol", target_definition)
         else target_definition["protocol"]
     )
+    props["ProtocolVersion"] = set_else_none(
+        "ProtocolVersion", target_definition, Ref(AWS_NO_VALUE)
+    )
     props["TargetType"] = "ip"
     import_target_group_attributes(props, target_definition, resource)
     validate_props_and_service_definition(props, service)
@@ -667,6 +670,9 @@ def handle_target_groups_association(
         set_healthcheck_definition(props, _target_def, "HealthCheck")
         props["Port"] = _target_def["Port"]
         props["Protocol"] = _target_def["Protocol"]
+        props["ProtocolVersion"] = set_else_none(
+            "ProtocolVersion", _target_def, Ref(AWS_NO_VALUE)
+        )
         props["TargetType"] = "ip"
         import_target_group_attributes(props, _target_def, load_balancer)
         _tgt_group = MergedTargetGroup(
