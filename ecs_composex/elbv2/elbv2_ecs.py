@@ -606,20 +606,25 @@ def handle_services_association(
     identified = []
     for target in load_balancer.families_targets:
         family: ComposeFamily = target[0]
-        print("TARGET?", target)
+        target_service: ComposeService = target[1]
+        service_def: dict = target[2]
+        target_combo_name: str = target[3]
         if target[1].launch_type == "EXTERNAL":
             LOG.error(
                 f"x-elbv2.{load_balancer.name} - Target family {family.name} uses EXTERNAL launch type. Ignoring"
             )
             continue
-        tgt_group = define_service_target_group_definition(
-            load_balancer, family, target[1], target[2], res_root_stack
+        tgt_group: ComposeTargetGroup = define_service_target_group_definition(
+            load_balancer, family, target_service, service_def, res_root_stack
         )
         for service_name, service in load_balancer.services.items():
-            target_name = f"{family.name}:{target[1].name}"
+            target_name = f"{family.name}:{target_service.name}"
             if target_name not in service_name:
                 continue
-            if target_name == service_name and tgt_group.Port == int(service["port"]):
+            if (service_name == target_combo_name) or (
+                service_name.find(target_name) == 0
+                and tgt_group.Port == int(service["port"])
+            ):
                 service["target_arn"] = Ref(tgt_group)
                 identified.append(True)
                 break
@@ -629,7 +634,6 @@ def handle_services_association(
             f"{load_balancer.module.res_key}.{load_balancer.name} - No services found as targets. Skipping association"
         )
         return
-
     for listener in load_balancer.new_listeners:
         listener.map_lb_target_groups_service_to_listener_targets(load_balancer)
 
@@ -657,7 +661,6 @@ def handle_target_groups_association(
     add_outputs(template, load_balancer.outputs)
     _targets = set_else_none("TargetGroups", load_balancer.definition, {})
     if not _targets:
-        print("NO TARGET GROUPS")
         return
     for _target_name, _target_def in _targets.items():
         props = {}
@@ -686,7 +689,6 @@ def handle_target_groups_association(
             listener.map_target_group_to_listener(_tgt_group)
 
         for listener in load_balancer.lookup_listeners.values():
-            print("MAPPING TARGET TO LISTENER", _tgt_group, listener)
             listener.map_target_group_to_listener(_tgt_group)
 
     for listener_port, listener_def in load_balancer.lookup_listeners.items():

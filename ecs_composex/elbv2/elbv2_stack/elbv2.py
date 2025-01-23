@@ -156,10 +156,15 @@ class Elbv2(NetworkXResource):
                             f" - Target {target['name']} is not a valid value. Must match",
                             LISTENER_TARGET_RE.pattern,
                         )
-                    if (
+                    simple_family: str = (
                         f"{target_parts.group('family')}:{target_parts.group('container')}"
-                        not in self.services
-                    ):
+                    )
+                    family_id: str = (
+                        simple_family + ":" + target_parts.group("port")
+                        if target_parts.group("port")
+                        else simple_family
+                    )
+                    if family_id not in self.services:
                         listener_def["Targets"].remove(target)
             if keyisset("Targets", listener_def) or keyisset(
                 "DefaultActions", listener_def
@@ -230,7 +235,7 @@ class Elbv2(NetworkXResource):
                                 f_service.family,
                                 f_service,
                                 service_def,
-                                f"{family_combo_name}{service_def['port']}",
+                                family_combo_name,
                             )
                         )
                         break
