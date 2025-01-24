@@ -156,10 +156,15 @@ class Elbv2(NetworkXResource):
                             f" - Target {target['name']} is not a valid value. Must match",
                             LISTENER_TARGET_RE.pattern,
                         )
-                    if (
+                    simple_family: str = (
                         f"{target_parts.group('family')}:{target_parts.group('container')}"
-                        not in self.services
-                    ):
+                    )
+                    family_id: str = (
+                        simple_family + ":" + target_parts.group("port")
+                        if target_parts.group("port")
+                        else simple_family
+                    )
+                    if family_id not in self.services:
                         listener_def["Targets"].remove(target)
             if keyisset("Targets", listener_def) or keyisset(
                 "DefaultActions", listener_def
@@ -199,8 +204,9 @@ class Elbv2(NetworkXResource):
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         for family_combo_name, service_def in self.services.items():
-            service_name = family_combo_name.split(":")[-1]
-            family_name = NONALPHANUM.sub("", family_combo_name.split(":")[0])
+            family_combo_parts: list[str] = family_combo_name.split(":")
+            family_name: str = NONALPHANUM.sub("", family_combo_parts[0])
+            service_name: str = family_combo_parts[1]
             LOG.info(
                 f"{self.module.res_key}.{self.name} - Adding target {family_name}:{service_name}"
             )
@@ -229,7 +235,7 @@ class Elbv2(NetworkXResource):
                                 f_service.family,
                                 f_service,
                                 service_def,
-                                f"{family_combo_name}{service_def['port']}",
+                                family_combo_name,
                             )
                         )
                         break

@@ -283,6 +283,15 @@
         },
         "TargetGroupAttributes": {
           "$ref": "#/definitions/TargetGroupAttributeDef"
+        },
+        "ProtocolVersion": {
+          "type": "string",
+          "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html#cfn-elasticloadbalancingv2-targetgroup-protocolversion",
+          "enum": [
+            "GRPC",
+            "HTTP1",
+            "HTTP2"
+          ]
         }
       }
     },

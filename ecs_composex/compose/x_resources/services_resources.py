@@ -34,10 +34,10 @@ class ServicesXResource(XResource):
     ):
         self.services = []
         self.families_targets: list[tuple] = []
-        self.families_scaling = []
+        self.families_scaling: list = []
         self.arn_parameter = None
         super().__init__(name, definition, module, settings)
-        self.services = set_else_none("Services", definition, alt_value={})
+        self.services: dict = set_else_none("Services", definition, alt_value={})
         self.set_services_targets(settings)
         self.set_services_scaling(settings)
 
