@@ -31,7 +31,6 @@ Services logic
 ** IAM Roles
 ** Containers
 ** Volumes (Docker volumes / EFS)
-** AppMesh/Proxy Settings
 
 * Define Service Definition
 ** Network settings (VPC/SG)

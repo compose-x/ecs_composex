@@ -182,7 +182,6 @@ class ComposeXSettings:
         )
         self.set_content(kwargs, content)
         self.set_output_settings(kwargs)
-        self.use_appmesh = keyisset("x-appmesh", self.compose_content)
         self.evaluate_private_namespace()
         self.name = kwargs[self.name_arg]
         self._ecs_cluster = None
@@ -324,12 +323,12 @@ class ComposeXSettings:
         Method to go over all services and figure out if any of them requires cloudmap.
         If so it will also expect x-dns.PrivateNamespace to be set.
         """
-        self.requires_private_namespace = self.use_appmesh or any(
+        self.requires_private_namespace = any(
             keyisset("x-cloudmap", service.x_network) for service in self.services
         )
         if self.requires_private_namespace:
             LOG.warning(
-                "At least one service requires cloudmap or AppMesh is used. Enabling private namespace"
+                "At least one service requires x-cloudmap. Enabling private namespace"
             )
 
     def requires_vpc(self):
