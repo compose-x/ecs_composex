@@ -236,6 +236,9 @@ def generate_full_template(settings: ComposeXSettings):
     :return root_template: Template, params
     :rtype: root_template, list
     """
+    LOG.warning(
+        "x-appmesh will be deprecated in 1.2.0 due to AppMesh being retired from AWS."
+    )
     LOG.info(
         f"Service families to process {[family.name for family in settings.families.values()]}"
     )

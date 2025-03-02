@@ -2,6 +2,25 @@
 History
 =======
 
+1.1.7 (2025-03-02)
+==================
+
+Future changes
+----------------
+
+In the next version, `x-appmesh` will be removed entirely due to the decomission of the AppMesh service by AWS.
+Instead, you are encourage to use `ECS Connect` which has some support in ecs-compose-x. Please reach out for any additional features
+or better support needed for `ECS Connect`.
+
+Fixes
+------
+
+* 1c300bda x-elbv2 - Fix index at which to pull the service name (#787) (John Mille)
+* 86563553 Updating poetry def of dependencies (John "Preston" Mille)
+* eb2f34a9 Adding optional parameters 'apply' and 'cleanup' for the 'plan for automation. (#783) (Raffid Ahmad)
+* b41b2285 Bump jinja2 from 3.1.4 to 3.1.5 (#782) (dependabot[bot])
+* ddb2cc30 Fix services networking in external launch type (#781) (John Mille)
+
 1.1.0 (2024-04-11)
 ====================
 
