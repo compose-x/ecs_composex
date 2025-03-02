@@ -14,9 +14,8 @@ if TYPE_CHECKING:
     from ecs_composex.common.stacks import ComposeXStack
 
 import re
-import secrets
 from copy import deepcopy
-from string import ascii_lowercase
+from datetime import datetime as dt
 from time import sleep
 
 from botocore.exceptions import ClientError
@@ -399,9 +398,7 @@ def plan(
     """
     validate_can_deploy_stack_from_settings(settings, root_stack)
     client = settings.session.client("cloudformation")
-    change_set_name = f"{settings.name}" + "".join(
-        secrets.choice(ascii_lowercase) for _ in range(10)
-    )
+    change_set_name = f"{settings.name}" + "_ecs_compose_x_" + dt.now().strftime("%s")
     if assert_can_create_stack(client, settings.name) or assert_can_update_stack(
         client, settings.name
     ):
@@ -417,20 +414,30 @@ def plan(
         )
         status = get_change_set_status(client, change_set_name, settings)
         if status:
-            if apply is None:
-                apply_q = input("Want to apply? [yN]: ")
-                apply = apply_q.lower() in ["y", "yes"]
+            plan_user_input(settings, client, change_set_name, apply, cleanup)
 
-            if apply:
-                client.execute_change_set(
-                    ChangeSetName=change_set_name,
-                    StackName=settings.name,
-                    DisableRollback=settings.disable_rollback,
-                )
-            else:
-                if cleanup is None:
-                    delete_q = input("Cleanup ChangeSet ? [yN]: ")
-                    cleanup = delete_q.lower() in ["y", "yes"]
 
-                if cleanup:
-                    client.delete_stack(StackName=settings.name)
+def plan_user_input(
+    settings: ComposeXSettings,
+    client,
+    change_set_name: str,
+    apply: bool = None,
+    cleanup: bool = None,
+) -> None:
+    if apply is None:
+        apply_q = input("Want to apply? [yN]: ")
+        apply = apply_q.lower() in ["y", "yes"]
+
+    if apply:
+        client.execute_change_set(
+            ChangeSetName=change_set_name,
+            StackName=settings.name,
+            DisableRollback=settings.disable_rollback,
+        )
+    else:
+        if cleanup is None:
+            delete_q = input("Cleanup ChangeSet ? [yN]: ")
+            cleanup = delete_q.lower() in ["y", "yes"]
+
+        if cleanup:
+            client.delete_stack(StackName=settings.name)
