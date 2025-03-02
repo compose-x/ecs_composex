@@ -227,10 +227,16 @@ def main():
     root_stack = generate_full_template(settings)
     process_stacks(root_stack, settings)
 
-    if settings.deploy:
-        deploy(settings, root_stack)
-    elif settings.plan:
-        plan(settings, root_stack, apply=args.apply, cleanup=args.cleanup)
+    try:
+        if settings.deploy:
+            deploy(settings, root_stack)
+            return 0
+        elif settings.plan:
+            plan(settings, root_stack, apply=args.apply, cleanup=args.cleanup)
+    except Exception as error:
+        LOG.error("Failed to execute the command successfully")
+        LOG.exception(error)
+        return 2
     return 0
 
 
