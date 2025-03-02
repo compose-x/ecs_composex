@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright 2020-2022 John Mille <john@compose-x.io>
+# Copyright 2020-2025 John Mille <john@compose-x.io>
 
 from boto3.session import Session
 from compose_x_common.aws.arns import ARNS_PER_TAGGINGAPI_TYPE

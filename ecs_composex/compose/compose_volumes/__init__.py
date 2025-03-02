@@ -1,8 +1,8 @@
 #  SPDX-License-Identifier: MPL-2.0
-#  Copyright 2020-2022 John Mille <john@compose-x.io>
+#  Copyright 2020-2025 John Mille <john@compose-x.io>
 
 # SPDX-License-Identifier: MPL-2.0
-# Copyright 2020-2022 John Mille <john@compose-x.io>
+# Copyright 2020-2025 John Mille <john@compose-x.io>
 
 """
 Class and functions to interact with the volumes: defined in compose files.

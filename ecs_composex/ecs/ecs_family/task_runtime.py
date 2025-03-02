@@ -1,5 +1,5 @@
 #  SPDX-License-Identifier: MPL-2.0
-#  Copyright 2020-2022 John Mille <john@compose-x.io>
+#  Copyright 2020-2025 John Mille <john@compose-x.io>
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.ecs.ecs_params import RUNTIME_CPU_ARCHITECTURE_T, RUNTIME_OS_FAMILY_T

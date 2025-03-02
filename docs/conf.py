@@ -48,7 +48,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "ECS Compose-X"
-copyright = "2020-2021, John Mille"
+copyright = "2020-2025, John Mille"
 author = "John Preston"
 
 version = ecs_composex.__version__

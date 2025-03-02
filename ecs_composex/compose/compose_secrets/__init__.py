@@ -1,5 +1,5 @@
 #  SPDX-License-Identifier: MPL-2.0
-#  Copyright 2020-2022 John Mille <john@compose-x
+#  Copyright 2020-2025 John Mille <john@compose-x
 
 """
 Package to manage docker-compose secrets

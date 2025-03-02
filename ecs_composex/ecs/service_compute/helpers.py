@@ -1,5 +1,5 @@
 #  SPDX-License-Identifier: MPL-2.0
-#  Copyright 2020-2022 John Mille <john@compose-x.io>
+#  Copyright 2020-2025 John Mille <john@compose-x.io>
 
 from compose_x_common.compose_x_common import keypresent, set_else_none
 from troposphere.ecs import CapacityProviderStrategyItem

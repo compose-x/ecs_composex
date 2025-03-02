@@ -1,5 +1,5 @@
 #  SPDX-License-Identifier: MPL-2.0
-#  Copyright 2020-2022 John Mille <john@compose-x.io>
+#  Copyright 2020-2025 John Mille <john@compose-x.io>
 
 """
 Helper functions around ECR and docker images, done early to ensure viability of the execution
