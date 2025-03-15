@@ -57,7 +57,7 @@ from ecs_composex.elbv2.elbv2_params import RES_KEY
 from ecs_composex.resources_import import import_record_properties
 
 LISTENER_TARGET_RE: re.Pattern = re.compile(
-    r"(?P<family>[\w\-]+):(?P<container>[\w\-]+)(?::(?P<port>\d+))?"
+    r"(?P<family>[\w\-]+):(?P<container>[\w\-]+)(?::(?P<port>[\d]{1,5}))?"
 )
 
 
@@ -193,6 +193,7 @@ def handle_predefined_redirects(listener: ComposeListener, action_name) -> None:
     """
     predefined_redirects = [
         ("HTTP_TO_HTTPS", http_to_https_default),
+        ("TEA_POT", tea_pot),
     ]
     if action_name not in [r[0] for r in predefined_redirects]:
         raise ValueError(

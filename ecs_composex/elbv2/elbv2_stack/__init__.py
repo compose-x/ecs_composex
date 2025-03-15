@@ -43,6 +43,12 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
+        warnings.warn(
+            UserWarning(
+                "In future version, the Listeners will have to be declared as a mapping,"
+                "using the port number as the key, instead of using a list as input"
+            )
+        )
         stack_template = init_elbv2_template()
         lb_input = {
             VPC_ID.title: Ref(VPC_ID),

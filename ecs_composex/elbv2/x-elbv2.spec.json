@@ -82,10 +82,23 @@
       }
     },
     "Listeners": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Listener"
-      }
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Listener"
+          }
+        },
+        {
+          "type": "object",
+          "patternProperties": {
+            "^x-": {},
+            "[0-9]{1,7}": {
+              "$ref": "#/definitions/ListenerV2"
+            }
+          }
+        }
+      ]
     },
     "Services": {
       "type": "object",
@@ -482,6 +495,44 @@
         "Port": {
           "$ref": "#/definitions/Port"
         },
+        "Protocol": {
+          "$ref": "#/definitions/Protocol"
+        },
+        "SslPolicy": {
+          "type": "string"
+        },
+        "Certificates": {
+          "$ref": "#/definitions/ListenerCertificates"
+        },
+        "DefaultActions": {
+          "type": "array"
+        },
+        "Targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TargetRule"
+          }
+        }
+      }
+    },
+    "ListenerV2": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {}
+      },
+      "oneOf": [
+        {
+          "required": [
+            "DefaultActions"
+          ]
+        },
+        {
+          "required": [
+            "Targets"
+          ]
+        }
+      ],
+      "properties": {
         "Protocol": {
           "$ref": "#/definitions/Protocol"
         },

@@ -135,6 +135,55 @@ Similar syntax as for ECS Services Ingress, allow you to define Ingress. See the
 Listeners
 =========
 
+.. hint::
+
+    Since version 1.1.8 you can define the listeners with a mapping, key being the port. For example
+
+    .. code-block::
+
+        x-elbv2:
+          lbA:
+            Properties:
+              Type: application
+              Scheme: internet-facing
+            DnsAliases:
+              - Route53Zone: x-route53::public-domain-01
+                Names:
+                  - test.bdd-testing.compose-x.io
+                  - someother.test.bdd-testing.compose-x.io
+            Settings:
+             S3Logs: bucket:/prefix
+             timeout_seconds: 60
+             desync_mitigation_mode: defensive
+             drop_invalid_header_fields: True
+             http2: False
+             cross_zone: True
+            Listeners:
+              80:
+                Protocol: HTTP
+                DefaultActions:
+                  - Redirect: HTTP_TO_HTTPS
+              443:
+                Protocol: HTTP
+                Certificates:
+                  - x-acm: public-acm-01
+                Targets:
+                  - name: bignicefamily:app01
+                    access: /somewhere
+              8080:
+                Protocol: HTTP
+                Certificates:
+                  - x-acm: public-acm-01
+                  - CertificateArn: arn:aws:acm:eu-west-1:012345678912:certificate/102402a1-d0d2-46ff-b26b-33008f072ee8
+                Targets:
+                  - name: bignicefamily:rproxy
+                    access: /
+                  - name: youtoo:rproxy
+                    access: /stupid
+                  - name: bignicefamily:app01
+                    access: thereisnospoon.ews-network.net:8080/abcd
+
+
 You can define in a very simple way your `Listener definition`_ and cross-reference other resources, here, the services
 and ACM certificates you might be creating.
 
@@ -148,6 +197,10 @@ The following properties are identical to the original CFN definition.
 * `Certificates <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-certificates>`_
 
 `JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json#L82>`__
+
+.. note::
+
+    When using the dict/object format for Listener ports, the ``Port`` property defined is ignored as to avoid having conflicting values.
 
 .. hint::
 
@@ -611,7 +664,7 @@ as reference for your use-case.
 .. _Type: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-type
 .. _Target Group: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html
 .. _Listener definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html
-.. _AuthenticateCognitoConfig : https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig.html#cfn-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig-userpoolarn
+.. _AuthenticateCognitoConfig : https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig.html
 .. _AuthenticateOidcConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticateoidcconfig.html
 .. _LoadBalancerAttributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-loadbalancerattributes
 .. _Tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-tags
