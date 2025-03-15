@@ -132,17 +132,7 @@ class Elbv2(NetworkXResource):
             ),
         }
 
-    def set_listeners(self, template):
-        """
-        Method to define the listeners
-        :return:
-        """
-        listeners: list[dict] = set_else_none("Listeners", self.definition, [])
-        if not listeners and not self.lookup_listeners:
-            raise KeyError(
-                f"You must define at least one listener for LB {self.name}"
-                " when not looking up existing ones."
-            )
+    def set_listeners_from_list(self, listeners: list[dict], template) -> None:
         ports = [listener["Port"] for listener in listeners]
         validate_listeners_duplicates(self.name, ports)
         for listener_def in listeners:
@@ -178,6 +168,24 @@ class Elbv2(NetworkXResource):
                     f"{self.module.res_key}.{self.name} - "
                     f"Listener {listener_def['Port']} has no action or service. Not used."
                 )
+
+    def set_listeners(self, template):
+        """
+        Method to define the listeners
+        :return:
+        """
+        listeners: list[dict] | dict[dict] = set_else_none(
+            "Listeners", self.definition, []
+        )
+        if not listeners and not self.lookup_listeners:
+            raise KeyError(
+                f"You must define at least one listener for LB {self.name}"
+                " when not looking up existing ones."
+            )
+        if isinstance(listeners, list):
+            self.set_listeners_from_list(listeners, template)
+        else:
+            raise TypeError("Listeners not yet supported as a mapping.")
 
     def find_lookup_listeners(self):
         """

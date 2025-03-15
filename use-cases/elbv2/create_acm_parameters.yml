@@ -61,10 +61,10 @@ x-elbv2:
       bignicefamily:rproxy:
         port: 80
         protocol: HTTP
-        healthcheck: 5000:HTTP:/healthcheck:200,201
+        healthcheck: 5000:HTTP:/:200,202
       bignicefamily:app01:
         port: 5000
-        healthcheck: 5000:HTTP:/path/to/healthcheck:200,201
+        healthcheck: 5000:HTTP:200,201,404
         protocol: HTTP
       youtoo:rproxy:
         port: 80

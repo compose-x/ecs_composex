@@ -285,7 +285,7 @@ def handle_ping_settings(props, ping_raw):
         props[ping_mapping[count][0]] = int(value)
 
 
-def handle_path_settings(props, path_raw):
+def handle_path_settings(props: dict, path_raw: str) -> None:
     """
     Function to set the path and codes properties
 
@@ -293,20 +293,28 @@ def handle_path_settings(props, path_raw):
     :param str path_raw:
     :return:
     """
-    path_re = re.compile(
-        r"(/[\S][^:]+.$)|(/[\S]+)(?::)((?:[\d]{1,4},?){1,}.$)|((?:[\d]{1,4},?){1,}.$)"
+    health_re = re.compile(
+        r"(?P<shorty>(/:(?P<codes0>(?:[\d]{1,4},?){1,}.$)))"
+        r"|(?P<long>(?P<path1>/[\S][^:]+)(?::)(?P<codes1>(?:[\d]{1,4},?){1,}.$))"
+        r"|(?P<codesonly>(?:[\d]{1,4},?){1,}.$)"
     )
-    groups = path_re.search(path_raw).groups()
-    if not groups:
-        LOG.debug("No PATH or ReturnCodes set.")
-        return
-    path = groups[0] or groups[1]
-    codes = groups[2] or groups[3]
-    if path:
-        props["HealthCheckPath"] = path
-    if codes:
-        props["Matcher"] = Matcher(HttpCode=codes)
-    if props["HealthCheckProtocol"] not in ["HTTP", "HTTPS"] and codes:
+    shorty = health_re.search(path_raw).group("shorty")
+    long = health_re.search(path_raw).group("long")
+    codes_only = health_re.search(path_raw).group("codesonly")
+
+    if shorty:
+        props["Matcher"] = Matcher(HttpCode=health_re.search(path_raw).group("codes0"))
+    elif long:
+        props["HealthCheckPath"] = health_re.search(path_raw).group("path1")
+        props["Matcher"] = Matcher(HttpCode=health_re.search(path_raw).group("codes1"))
+    elif codes_only:
+        props["Matcher"] = Matcher(
+            HttpCode=health_re.search(path_raw).group("codesonly")
+        )
+
+    if props["HealthCheckProtocol"] not in ["HTTP", "HTTPS"] and isinstance(
+        props["Matcher"], Matcher
+    ):
         raise ValueError(
             groups,
             "Protocol and return codes are only valid for HTTP and HTTPS HealthCheck",
@@ -335,26 +343,28 @@ def set_healthcheck_definition(
         "HealthCheckPort",
         "HealthCheckProtocol",
     )
-    required_rex = re.compile(r"^([\d]{2,5}):(HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP)$")
+    required_rex = re.compile(r"^([\d]{2,5}):(HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP|GENEVE)$")
     healthcheck_reg = re.compile(
-        r"(^(?:[\d]{2,5}):(?:HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP)):?"
-        r"((?:[\d]{1}|10):(?:[\d]{1}|10):[\d]{1,3}:[\d]{1,3})?:"
-        r"?((?:/[\S][^:]+.$)|(?:/[\S]+)(?::)(?:(?:[\d]{1,4},?){1,}.$)|(?:(?:[\d]{1,4},?){1,}.$))?"
+        r"(?:^(?P<port>[\d]{2,5}):(?P<protocol>HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP|GENEVE)):?"
+        r"(?P<ping>(?:[\d]{1}|10):(?:[\d]{1}|10):[\d]{1,3}:[\d]{1,3})?:?"
+        r"(?P<health>(?:/[\S][^:]+.$)|(?:/[\S][^:]+)(?::)(?:(?:[\d]{1,4},?){1,}.$)|(?:(?:[\d]{1,4},?){1,}.$))?"
     )
     healthcheck_definition = set_else_none(healtheck_keyword, target_definition)
     if isinstance(healthcheck_definition, str):
-        groups = healthcheck_reg.search(healthcheck_definition).groups()
-        if not groups[0]:
+        port, protocol, ping, health = healthcheck_reg.search(
+            healthcheck_definition
+        ).groups()
+        if not port or not protocol:
             raise ValueError(
                 f"You need to define at least the Protocol and port for {healtheck_keyword}"
             )
-        for count, value in enumerate(required_rex.match(groups[0]).groups()):
-            healthcheck_props[required_mapping[count]] = value
-        if groups[1]:
-            handle_ping_settings(healthcheck_props, groups[1])
-        if groups[2]:
+        healthcheck_props["HealthCheckPort"] = int(port)
+        healthcheck_props["HealthCheckProtocol"] = protocol
+        if ping:
+            handle_ping_settings(healthcheck_props, ping_raw=ping)
+        if health:
             try:
-                handle_path_settings(healthcheck_props, groups[2])
+                handle_path_settings(healthcheck_props, health)
             except ValueError:
                 LOG.error(target_definition["name"], target_definition["healthcheck"])
                 raise
@@ -372,12 +382,10 @@ def set_healthcheck_definition(
     props.update(healthcheck_props)
 
 
-def validate_props_and_service_definition(props, service):
+def validate_props_and_service_definition(props: dict, service: ComposeService) -> None:
     """
     Function to validate that the defined settings are valid according to the service definition.
-    :param props:
-    :param ecs_composex.common.compose_services.ComposeService service:
-    :return:
+    :raises ValueError: if any of the settings are invalid
     """
     valid_tcp = ["HTTP", "HTTPS", "TLS", "TCP_UDP", "TCP"]
     valid_udp = ["UDP", "TCP_UDP"]
@@ -401,13 +409,11 @@ def validate_props_and_service_definition(props, service):
         )
 
 
-def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
+def handle_sg_lb_ingress_to_service(
+    resource, family: ComposeFamily, resources_stack: ComposeXStack
+) -> None:
     """
     Function to add ingress from the LB to Target if using ALB
-    :param resource:
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :param resources_stack:
-    :return:
     """
     if resource.is_nlb():
         return
@@ -446,7 +452,8 @@ def validate_target_group_attributes(target_attributes, validation, lb_type):
             raise ValueError(f"{attr.Key} value {attr.Value} is not valid.")
 
 
-def import_target_group_attributes(props, target_def, elbv2):
+def import_target_group_attributes(props: dict, target_def: dict, elbv2) -> None:
+    """Function to do input validation to try avoid incompatible settings together"""
     attributes_key = "TargetGroupAttributes"
     if not keyisset(attributes_key, target_def):
         props[attributes_key] = [
