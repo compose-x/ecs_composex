@@ -339,11 +339,6 @@ def set_healthcheck_definition(
         "HealthCheckTimeoutSeconds": Ref(AWS_NO_VALUE),
         "HealthyThresholdCount": Ref(AWS_NO_VALUE),
     }
-    required_mapping = (
-        "HealthCheckPort",
-        "HealthCheckProtocol",
-    )
-    required_rex = re.compile(r"^([\d]{2,5}):(HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP|GENEVE)$")
     healthcheck_reg = re.compile(
         r"(?:^(?P<port>[\d]{2,5}):(?P<protocol>HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP|GENEVE)):?"
         r"(?P<ping>(?:[\d]{1}|10):(?:[\d]{1}|10):[\d]{1,3}:[\d]{1,3})?:?"
