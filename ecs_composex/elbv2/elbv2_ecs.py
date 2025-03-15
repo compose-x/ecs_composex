@@ -619,7 +619,7 @@ def handle_services_association(
         target_service: ComposeService = target[1]
         service_def: dict = target[2]
         target_combo_name: str = target[3]
-        if target[1].launch_type == "EXTERNAL":
+        if target_service.launch_type == "EXTERNAL":
             LOG.error(
                 f"x-elbv2.{load_balancer.name} - Target family {family.name} uses EXTERNAL launch type. Ignoring"
             )

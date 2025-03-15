@@ -42,31 +42,34 @@ x-elbv2:
         Certificates:
           - x-acm: public-acm-01
         Targets:
-          - name: bignicefamily:app01
+          - name: bignicefamily:app01:5000
             access: /somewhere
+      8443:
+        DefaultActions:
+          - Redirect: TEA_POT
       8080:
         Protocol: HTTP
         Certificates:
           - x-acm: public-acm-01
           - CertificateArn: arn:aws:acm:eu-west-1:012345678912:certificate/102402a1-d0d2-46ff-b26b-33008f072ee8
         Targets:
-          - name: bignicefamily:rproxy
+          - name: bignicefamily:rproxy:80
             access: /
-          - name: youtoo:rproxy
+          - name: youtoo:rproxy:80
             access: /stupid
-          - name: bignicefamily:app01
+          - name: bignicefamily:app01:5000
             access: thereisnospoon.ews-network.net:8080/abcd
 
     Services:
-      bignicefamily:rproxy:
+      bignicefamily:rproxy:80:
         port: 80
         protocol: HTTP
         healthcheck: 5000:HTTP:/:200,202
-      bignicefamily:app01:
+      bignicefamily:app01:5000:
         port: 5000
         healthcheck: 5000:HTTP:200,201,404
         protocol: HTTP
-      youtoo:rproxy:
+      youtoo:rproxy:80:
         port: 80
         healthcheck: 5000:HTTP:5:2:15:3:/ping.This.Method:200,201
         protocol: HTTP
@@ -80,17 +83,52 @@ x-elbv2:
       - Port: 8080
         Protocol: TCP
         Targets:
-          - name: app03:app03
+          - name: app03:app03:5000
             access: /
       - Port: 8081
         Protocol: TCP
         Certificates:
           - x-acm: public-acm-01
         Targets:
-          - name: app03:app03
+          - name: app03:app03:5000
             access: /
     Services:
-      app03:app03:
+      app03:app03:5000:
         port: 5000
         healthcheck: 5000:TCP:7:2:15:5
         protocol: TCP
+
+  public-api:
+    Properties:
+      Scheme: internet-facing
+      Type: application
+    MacroParameters:
+      cross_zone: false
+      Ingress:
+        ExtSources:
+          - IPv4: 0.0.0.0/0
+            Name: ANY
+            Ports:
+              - 8888
+    Listeners:
+      8888:
+        Protocol: HTTPS
+        Certificates:
+          - x-acm: public-acm-01
+        Targets:
+          - name: app03:app03:5000
+            Conditions:
+              - Field: host-header
+                HostHeaderConfig:
+                  Values:
+                    - "api-src.kafka.whatever.net"
+
+        SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    Services:
+      app03:app03:5000:
+        port: 5000
+        protocol: HTTP
+        healthcheck: 5000:HTTP:2:2:15:5:/health:200
+        TargetGroupAttributes:
+          - Key: deregistration_delay.timeout_seconds
+            Value: "15"

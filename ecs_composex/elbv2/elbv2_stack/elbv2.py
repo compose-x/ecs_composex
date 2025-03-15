@@ -145,7 +145,7 @@ class Elbv2(NetworkXResource):
 
         self.set_listeners_from_dict(dict_definition, template)
 
-    def _define_targets(self, targets: list[dict]) -> None:
+    def _define_targets(self, targets: list[dict], listener_def, port: int) -> None:
         """
         Validates the targets definitions is correct
 
@@ -155,7 +155,7 @@ class Elbv2(NetworkXResource):
             target_parts = LISTENER_TARGET_RE.match(target["name"])
             if not target_parts:
                 raise ValueError(
-                    f"{self.module.res_key}.{self.name} - Listener {listener_def['Port']}"
+                    f"{self.module.res_key}.{self.name} - Listener {port}"
                     f" - Target {target['name']} is not a valid value. Must match",
                     LISTENER_TARGET_RE.pattern,
                 )
@@ -178,7 +178,7 @@ class Elbv2(NetworkXResource):
         for port, listener_def in listeners.items():
             targets: list[dict] = set_else_none("Targets", listener_def, [])
             if targets and self.services:
-                self._define_targets(targets)
+                self._define_targets(targets, listener_def, port)
             if keyisset("Targets", listener_def) or keyisset(
                 "DefaultActions", listener_def
             ):
@@ -187,10 +187,13 @@ class Elbv2(NetworkXResource):
                 )
                 self.new_listeners.append(new_listener)
             else:
-                LOG.warning(
-                    f"{self.module.res_key}.{self.name} - "
-                    f"Listener {listener_def['Port']} has no action or service. Not used."
-                )
+                if self.cfn_resource:
+                    raise AttributeError(
+                        f"x-elbv2.{self.name}.{self.lb_type}"
+                        f" - Listener {port} has no identified target or default action. "
+                        "Therefore its creation will fail. "
+                        "Ensure to set DefaultActions or make sure there is at least one identified target."
+                    )
 
     def set_listeners(self, template):
         """
@@ -340,7 +343,11 @@ class Elbv2(NetworkXResource):
         ):
             LOG.warning(f"You did not define any Ingress rules for ALB {self.name}.")
             return
-        ports = [listener["Port"] for listener in self.definition["Listeners"]]
+        ports = (
+            [listener["Port"] for listener in self.definition["Listeners"]]
+            if isinstance(self.definition["Listeners"], list)
+            else list(self.definition["Listeners"].keys())
+        )
         ports = set_service_ports(ports)
         self.ingress = Ingress(self.parameters["Ingress"], ports)
         if self.ingress and self.is_alb():
