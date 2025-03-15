@@ -212,6 +212,21 @@ Definition
 .. literalinclude:: ../../../ecs_composex/s3/x-s3.spec.json
     :language: json
 
+Tips
+======
+
+You can use the marking ``x-s3::<BucketName>::BucketName`` within an environment variable name and the correct value will be interpolated. For example, to build a S3 URL
+
+.. code-block::
+
+    x-s3:
+      storage-bucket: {}
+
+    services:
+      storage-service:
+        environment:
+          S3_URL: s3://x-s3::storage-bucket::BucketName
+
 
 Test files
 ===========
