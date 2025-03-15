@@ -196,60 +196,12 @@ def process_custom_rules(family, ecs_sd_config, options, emf_processors):
         )
 
 
-def get_ecs_envoy_processor(envoy_container_name=None):
-    """
-    Function to return the envoy EMF configuration
-
-    :param str envoy_container_name:
-    :return:
-    """
-    if envoy_container_name is None:
-        envoy_container_name = r"envoy"
-    return [
-        {
-            "source_labels": ["container_name"],
-            "label_matcher": f"^{envoy_container_name}$",
-            "dimensions": [["ClusterName", "TaskDefinitionFamily"]],
-            "metric_selectors": [
-                "^envoy_http_downstream_rq_(total|xx)$",
-                "^envoy_cluster_upstream_cx_(r|t)x_bytes_total$",
-                "^envoy_cluster_membership_(healthy|total)$",
-                "^envoy_server_memory_(allocated|heap_size)$",
-                "^envoy_cluster_upstream_cx_(connect_timeout|destroy_local_with_active_rq)$",
-                "^envoy_cluster_upstream_rq_(pending_failure_eject|"
-                "pending_overflow|timeout|per_try_timeout|rx_reset|maintenance_mode)$",
-                "^envoy_http_downstream_cx_destroy_remote_active_rq$",
-                "^envoy_cluster_upstream_flow_control_(paused_reading_total|"
-                "resumed_reading_total|backed_up_total|drained_total)$",
-                "^envoy_cluster_upstream_rq_retry$",
-                "^envoy_cluster_upstream_rq_retry_(success|overflow)$",
-                "^envoy_server_(version|uptime|live)$",
-            ],
-        },
-        {
-            "source_labels": ["container_name"],
-            "label_matcher": f"^{envoy_container_name}$",
-            "dimensions": [
-                [
-                    "ClusterName",
-                    "TaskDefinitionFamily",
-                    "envoy_http_conn_manager_prefix",
-                    "envoy_response_code_class",
-                ]
-            ],
-            "metric_selectors": ["^envoy_http_downstream_rq_xx$"],
-        },
-    ]
-
-
 def generate_emf_processors(family, ecs_sd_config, **options) -> dict:
     metrics_key = "metric_declaration"
     emf_processors = {
         "metric_declaration_dedup": True,
         metrics_key: [],
     }
-    if keyisset("CollectForAppMesh", options):
-        emf_processors[metrics_key] += get_ecs_envoy_processor()
     if keyisset("CollectForJavaJmx", options):
         emf_processors[metrics_key] += get_jmx_processor(
             family, ecs_sd_config, options["CollectForJavaJmx"]

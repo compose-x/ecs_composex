@@ -51,7 +51,6 @@ def set_prometheus(family):
     """
 
     prometheus_options = {
-        "CollectForAppMesh": False,
         "CollectForJavaJmx": False,
         "CollectForNginx": False,
         "EnableTasksDiscovery": False,

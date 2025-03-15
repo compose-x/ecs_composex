@@ -67,7 +67,7 @@ def handle_multi_services(sidecar_used_memory: int, family: ComposeFamily) -> No
 
 def unlock_compute_for_main_container(family: ComposeFamily) -> None:
     """
-    When adding new containers (i.e. AppMesh/XRay etc.) the task definition CPU
+    When adding new containers (i.e. XRay etc.) the task definition CPU
     and RAM got bumped with these resources, the task CPU/Memory could have been
     bumped to the next Fargate profile. This results into waste of resource for
     a given service.
