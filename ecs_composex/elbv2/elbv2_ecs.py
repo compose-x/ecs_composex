@@ -294,9 +294,9 @@ def handle_path_settings(props: dict, path_raw: str) -> None:
     :return:
     """
     health_re = re.compile(
-        r"(?P<shorty>(/:(?P<codes0>(?:[\d]{1,4},?){1,}.$)))"
-        r"|(?P<long>(?P<path1>/[\S][^:]+)(?::)(?P<codes1>(?:[\d]{1,4},?){1,}.$))"
-        r"|(?P<codesonly>(?:[\d]{1,4},?){1,}.$)"
+        r"(?P<shorty>^/:(?P<codes0>(?:[12345][0-9]{2},?){1,})$)"
+        r"|(?P<long>(?P<path1>/[^:]+):(?P<codes1>(?:[12345][0-9]{2},?){1,})$)|"
+        r"(?P<codesonly>(?:[12345][0-9]{2},?){1,})$"
     )
     shorty = health_re.search(path_raw).group("shorty")
     long = health_re.search(path_raw).group("long")
