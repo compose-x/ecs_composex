@@ -49,7 +49,7 @@ class ComposeListener(Listener):
 
     targets_keys = "Targets"
 
-    def __init__(self, lb: Elbv2, definition):
+    def __init__(self, lb: Elbv2, port: int, definition: dict):
         """
         Method to init listener.
 
@@ -57,14 +57,16 @@ class ComposeListener(Listener):
         :param dict definition:
         """
         self._lb = lb
+        self._port: int = port
         self.definition = deepcopy(definition)
-        straight_import_keys = ["Port", "Protocol", "SslPolicy", "AlpnPolicy"]
+        straight_import_keys = ["Protocol", "SslPolicy", "AlpnPolicy"]
         listener_kwargs = {
             x: self.definition[x] for x in straight_import_keys if x in self.definition
         }
         listener_kwargs.update(
             {x: self.definition[x] for x in self.attributes if x in self.definition}
         )
+        listener_kwargs.update({"Port": port})
         self.services = (
             self.definition[self.targets_keys]
             if keyisset(self.targets_keys, self.definition)
@@ -103,7 +105,7 @@ class ComposeListener(Listener):
 
     @property
     def def_port(self) -> int:
-        return int(self.definition["Port"])
+        return self._port
 
     @property
     def lb(self) -> Elbv2:

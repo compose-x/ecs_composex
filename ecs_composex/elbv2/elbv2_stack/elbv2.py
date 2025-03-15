@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import ecs_composex.common.troposphere_tools
 
 if TYPE_CHECKING:
+    from troposphere import Template
     from ecs_composex.mods_manager import XResourceModule
     from ecs_composex.common.settings import ComposeXSettings
 
@@ -133,34 +134,56 @@ class Elbv2(NetworkXResource):
         }
 
     def set_listeners_from_list(self, listeners: list[dict], template) -> None:
+        """Transforms the list of listeners into a dict format."""
         ports = [listener["Port"] for listener in listeners]
         validate_listeners_duplicates(self.name, ports)
-        for listener_def in listeners:
+        dict_definition: dict[int, dict] = {}
+        for _def in listeners:
+            _port = int(_def["Port"])
+            del _def["Port"]
+            dict_definition[_port] = _def
+
+        self.set_listeners_from_dict(dict_definition, template)
+
+    def _define_targets(self, targets: list[dict]) -> None:
+        """
+        Validates the targets definitions is correct
+
+        :raises: ValueError if the defined listener target does not comply to the LISTENER_TARGET_RE regex
+        """
+        for target in targets:
+            target_parts = LISTENER_TARGET_RE.match(target["name"])
+            if not target_parts:
+                raise ValueError(
+                    f"{self.module.res_key}.{self.name} - Listener {listener_def['Port']}"
+                    f" - Target {target['name']} is not a valid value. Must match",
+                    LISTENER_TARGET_RE.pattern,
+                )
+            simple_family: str = (
+                f"{target_parts.group('family')}:{target_parts.group('container')}"
+            )
+            family_id: str = (
+                simple_family + ":" + target_parts.group("port")
+                if target_parts.group("port")
+                else simple_family
+            )
+            if family_id not in self.services:
+                listener_def["Targets"].remove(target)
+
+    def set_listeners_from_dict(self, listeners: dict, template: Template) -> None:
+        """
+        Creates ComposeListener objects from the definition within x-elbv2.<LB>
+
+        """
+        for port, listener_def in listeners.items():
             targets: list[dict] = set_else_none("Targets", listener_def, [])
             if targets and self.services:
-                for target in targets:
-                    target_parts = LISTENER_TARGET_RE.match(target["name"])
-                    if not target_parts:
-                        raise ValueError(
-                            f"{self.module.res_key}.{self.name} - Listener {listener_def['Port']}"
-                            f" - Target {target['name']} is not a valid value. Must match",
-                            LISTENER_TARGET_RE.pattern,
-                        )
-                    simple_family: str = (
-                        f"{target_parts.group('family')}:{target_parts.group('container')}"
-                    )
-                    family_id: str = (
-                        simple_family + ":" + target_parts.group("port")
-                        if target_parts.group("port")
-                        else simple_family
-                    )
-                    if family_id not in self.services:
-                        listener_def["Targets"].remove(target)
+                self._define_targets(targets)
             if keyisset("Targets", listener_def) or keyisset(
                 "DefaultActions", listener_def
             ):
                 new_listener = template.add_resource(
-                    ComposeListener(self, listener_def)
+                    ComposeListener(self, int(port), listener_def)
                 )
                 self.new_listeners.append(new_listener)
             else:
@@ -184,8 +207,12 @@ class Elbv2(NetworkXResource):
             )
         if isinstance(listeners, list):
             self.set_listeners_from_list(listeners, template)
+        elif isinstance(listeners, dict):
+            self.set_listeners_from_dict(listeners, template)
         else:
-            raise TypeError("Listeners not yet supported as a mapping.")
+            raise TypeError(
+                "Listeners must be one of [list, dict]. Got", type(listeners)
+            )
 
     def find_lookup_listeners(self):
         """

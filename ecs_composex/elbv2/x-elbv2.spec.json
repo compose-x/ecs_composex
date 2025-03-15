@@ -92,8 +92,8 @@
         {
           "type": "object",
           "patternProperties": {
-            "x-": {},
-            "[0-9]{1,6}": {
+            "^x-": {},
+            "[0-9]{1,7}": {
               "$ref": "#/definitions/ListenerV2"
             }
           }
@@ -517,6 +517,9 @@
     },
     "ListenerV2": {
       "type": "object",
+      "patternProperties": {
+        "^x-": {}
+      },
       "oneOf": [
         {
           "required": [
