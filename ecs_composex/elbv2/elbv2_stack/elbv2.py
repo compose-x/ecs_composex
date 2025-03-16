@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from troposphere import Template
     from ecs_composex.mods_manager import XResourceModule
     from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.elbv2.resources.merged_target_group import MergedTargetGroup
 
 from compose_x_common.aws.elasticloadbalancing import LB_V2_LISTENER_ARN_RE
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
@@ -27,7 +28,6 @@ from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME, add_parameters
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
-from ecs_composex.elbv2.elbv2_ecs import MergedTargetGroup
 from ecs_composex.elbv2.elbv2_params import (
     LB_ARN,
     LB_CLOUD_CONTROL_ATTRIBUTES,
