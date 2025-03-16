@@ -8,8 +8,10 @@ from typing import TYPE_CHECKING
 import ecs_composex.common.troposphere_tools
 
 if TYPE_CHECKING:
+    from troposphere import Template
     from ecs_composex.mods_manager import XResourceModule
     from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.elbv2.resources.merged_target_group import MergedTargetGroup
 
 from compose_x_common.aws.elasticloadbalancing import LB_V2_LISTENER_ARN_RE
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
@@ -26,7 +28,6 @@ from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME, add_parameters
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
-from ecs_composex.elbv2.elbv2_ecs import MergedTargetGroup
 from ecs_composex.elbv2.elbv2_params import (
     LB_ARN,
     LB_CLOUD_CONTROL_ATTRIBUTES,
@@ -132,52 +133,89 @@ class Elbv2(NetworkXResource):
             ),
         }
 
+    def set_listeners_from_list(self, listeners: list[dict], template) -> None:
+        """Transforms the list of listeners into a dict format."""
+        ports = [listener["Port"] for listener in listeners]
+        validate_listeners_duplicates(self.name, ports)
+        dict_definition: dict[int, dict] = {}
+        for _def in listeners:
+            _port = int(_def["Port"])
+            del _def["Port"]
+            dict_definition[_port] = _def
+
+        self.set_listeners_from_dict(dict_definition, template)
+
+    def _define_targets(self, targets: list[dict], listener_def, port: int) -> None:
+        """
+        Validates the targets definitions is correct
+
+        :raises: ValueError if the defined listener target does not comply to the LISTENER_TARGET_RE regex
+        """
+        for target in targets:
+            target_parts = LISTENER_TARGET_RE.match(target["name"])
+            if not target_parts:
+                raise ValueError(
+                    f"{self.module.res_key}.{self.name} - Listener {port}"
+                    f" - Target {target['name']} is not a valid value. Must match",
+                    LISTENER_TARGET_RE.pattern,
+                )
+            simple_family: str = (
+                f"{target_parts.group('family')}:{target_parts.group('container')}"
+            )
+            family_id: str = (
+                simple_family + ":" + target_parts.group("port")
+                if target_parts.group("port")
+                else simple_family
+            )
+            if family_id not in self.services:
+                listener_def["Targets"].remove(target)
+
+    def set_listeners_from_dict(self, listeners: dict, template: Template) -> None:
+        """
+        Creates ComposeListener objects from the definition within x-elbv2.<LB>
+
+        """
+        for port, listener_def in listeners.items():
+            targets: list[dict] = set_else_none("Targets", listener_def, [])
+            if targets and self.services:
+                self._define_targets(targets, listener_def, port)
+            if keyisset("Targets", listener_def) or keyisset(
+                "DefaultActions", listener_def
+            ):
+                new_listener = template.add_resource(
+                    ComposeListener(self, int(port), listener_def)
+                )
+                self.new_listeners.append(new_listener)
+            else:
+                if self.cfn_resource:
+                    raise AttributeError(
+                        f"x-elbv2.{self.name}.{self.lb_type}"
+                        f" - Listener {port} has no identified target or default action. "
+                        "Therefore its creation will fail. "
+                        "Ensure to set DefaultActions or make sure there is at least one identified target."
+                    )
+
     def set_listeners(self, template):
         """
         Method to define the listeners
         :return:
         """
-        listeners: list[dict] = set_else_none("Listeners", self.definition, [])
+        listeners: list[dict] | dict[dict] = set_else_none(
+            "Listeners", self.definition, []
+        )
         if not listeners and not self.lookup_listeners:
             raise KeyError(
                 f"You must define at least one listener for LB {self.name}"
                 " when not looking up existing ones."
             )
-        ports = [listener["Port"] for listener in listeners]
-        validate_listeners_duplicates(self.name, ports)
-        for listener_def in listeners:
-            targets: list[dict] = set_else_none("Targets", listener_def, [])
-            if targets and self.services:
-                for target in targets:
-                    target_parts = LISTENER_TARGET_RE.match(target["name"])
-                    if not target_parts:
-                        raise ValueError(
-                            f"{self.module.res_key}.{self.name} - Listener {listener_def['Port']}"
-                            f" - Target {target['name']} is not a valid value. Must match",
-                            LISTENER_TARGET_RE.pattern,
-                        )
-                    simple_family: str = (
-                        f"{target_parts.group('family')}:{target_parts.group('container')}"
-                    )
-                    family_id: str = (
-                        simple_family + ":" + target_parts.group("port")
-                        if target_parts.group("port")
-                        else simple_family
-                    )
-                    if family_id not in self.services:
-                        listener_def["Targets"].remove(target)
-            if keyisset("Targets", listener_def) or keyisset(
-                "DefaultActions", listener_def
-            ):
-                new_listener = template.add_resource(
-                    ComposeListener(self, listener_def)
-                )
-                self.new_listeners.append(new_listener)
-            else:
-                LOG.warning(
-                    f"{self.module.res_key}.{self.name} - "
-                    f"Listener {listener_def['Port']} has no action or service. Not used."
-                )
+        if isinstance(listeners, list):
+            self.set_listeners_from_list(listeners, template)
+        elif isinstance(listeners, dict):
+            self.set_listeners_from_dict(listeners, template)
+        else:
+            raise TypeError(
+                "Listeners must be one of [list, dict]. Got", type(listeners)
+            )
 
     def find_lookup_listeners(self):
         """
@@ -305,7 +343,11 @@ class Elbv2(NetworkXResource):
         ):
             LOG.warning(f"You did not define any Ingress rules for ALB {self.name}.")
             return
-        ports = [listener["Port"] for listener in self.definition["Listeners"]]
+        ports = (
+            [listener["Port"] for listener in self.definition["Listeners"]]
+            if isinstance(self.definition["Listeners"], list)
+            else list(self.definition["Listeners"].keys())
+        )
         ports = set_service_ports(ports)
         self.ingress = Ingress(self.parameters["Ingress"], ports)
         if self.ingress and self.is_alb():
