@@ -11,17 +11,17 @@ if TYPE_CHECKING:
     from ecs_composex.common.stacks import ComposeXStack
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
-from compose_x_common.compose_x_common import keyisset
-from troposphere import GetAtt, Output, Ref, Sub
+from troposphere import Ref
 from troposphere.ecs import LoadBalancer as EcsLb
 from troposphere.elasticloadbalancingv2 import TargetGroup
 
 from ecs_composex.common import NONALPHANUM
-from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
 from ecs_composex.elbv2.elbv2_ecs.common import handle_sg_lb_ingress_to_service
-from ecs_composex.elbv2.elbv2_params import TGT_FULL_NAME, TGT_GROUP_ARN, TGT_GROUP_NAME
+from ecs_composex.elbv2.elbv2_params import TGT_GROUP_ARN
+
+from .targets_common import generate_tg_outputs, set_new_tg_output, set_tg_outputs
 
 
 class MergedTargetGroup(TargetGroup):
@@ -51,67 +51,13 @@ class MergedTargetGroup(TargetGroup):
         return self._definition
 
     def init_outputs(self):
-        self.output_properties = {
-            TGT_GROUP_ARN: (self.title, self, Ref, None),
-            TGT_GROUP_NAME: (
-                f"{self.title}{TGT_GROUP_NAME.return_value}",
-                self,
-                GetAtt,
-                TGT_GROUP_NAME.return_value,
-                None,
-            ),
-            TGT_FULL_NAME: (
-                f"{self.title}{TGT_FULL_NAME.return_value}",
-                self,
-                GetAtt,
-                TGT_FULL_NAME.return_value,
-                None,
-            ),
-        }
+        set_tg_outputs(self)
 
     def generate_outputs(self):
-        for (
-            attribute_parameter,
-            output_definition,
-        ) in self.output_properties.items():
-            output_name = f"{self.title}{attribute_parameter.title}"
-            value = self.set_new_resource_outputs(output_definition)
-            self.attributes_outputs[attribute_parameter] = {
-                "Name": output_name,
-                "Output": Output(output_name, Value=value),
-                "ImportParameter": Parameter(
-                    output_name,
-                    return_value=attribute_parameter.return_value,
-                    Type=attribute_parameter.Type,
-                ),
-                "ImportValue": GetAtt(
-                    self.stack,
-                    f"Outputs.{output_name}",
-                ),
-                "Original": attribute_parameter,
-            }
-        for attr in self.attributes_outputs.values():
-            if keyisset("Output", attr):
-                self.outputs.append(attr["Output"])
+        generate_tg_outputs(self)
 
     def set_new_resource_outputs(self, output_definition):
-        """
-        Method to define the outputs for the resource when new
-        """
-        if output_definition[2] is Ref:
-            value = Ref(output_definition[1])
-        elif output_definition[2] is GetAtt:
-            value = GetAtt(output_definition[1], output_definition[3])
-        elif output_definition[2] is Sub:
-            value = Sub(output_definition[3])
-        else:
-            raise TypeError(
-                f"3rd argument for {output_definition[0]} must be one of",
-                (Ref, GetAtt, Sub),
-                "Got",
-                output_definition[2],
-            )
-        return value
+        return set_new_tg_output(self, output_definition)
 
     def associate_families(self, settings: ComposeXSettings):
         for _family in self.definition["Services"]:
