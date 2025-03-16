@@ -65,7 +65,7 @@ def generate_tg_outputs(target_group: Union[ComposeTargetGroup, MergedTargetGrou
             target_group.outputs.append(attr["Output"])
 
 
-def set_new_tg_output(target_group, output_definition: tuple):
+def set_new_tg_output(output_definition: tuple):
     if output_definition[2] is Ref:
         value = Ref(output_definition[1])
     elif output_definition[2] is GetAtt:

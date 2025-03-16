@@ -16,6 +16,8 @@ from troposphere.elasticloadbalancingv2 import Matcher, TargetGroupAttribute
 
 from ecs_composex.common.logging import LOG
 
+DEREGISTRATION_DELAY_TIMEOUT_SECONDS: str = "deregistration_delay.timeout_seconds"
+
 
 def validate_props_and_service_definition(props: dict, service: ComposeService) -> None:
     """
@@ -24,7 +26,7 @@ def validate_props_and_service_definition(props: dict, service: ComposeService) 
     """
     valid_tcp = ["HTTP", "HTTPS", "TLS", "TCP_UDP", "TCP"]
     valid_udp = ["UDP", "TCP_UDP"]
-    if not props["Port"] in [p["target"] for p in service.ports]:
+    if props["Port"] not in [p["target"] for p in service.ports]:
         raise ValueError(
             f"Defined TargetGroup port {props['Port']} is not defined for {service.name}."
             " Valid ports are",
@@ -132,7 +134,7 @@ def import_target_group_attributes(props: dict, target_def: dict, elbv2) -> None
     attributes_key = "TargetGroupAttributes"
     if not keyisset(attributes_key, target_def):
         props[attributes_key] = [
-            TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
+            TargetGroupAttribute(Key=DEREGISTRATION_DELAY_TIMEOUT_SECONDS, Value="60")
         ]
     else:
         if isinstance(target_def[attributes_key], list):
@@ -147,14 +149,14 @@ def import_target_group_attributes(props: dict, target_def: dict, elbv2) -> None
             ]
     if not keyisset(attributes_key, props):
         props[attributes_key] = [
-            TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
+            TargetGroupAttribute(Key=DEREGISTRATION_DELAY_TIMEOUT_SECONDS, Value="60")
         ]
         return
-    if "deregistration_delay.timeout_seconds" not in [
+    if DEREGISTRATION_DELAY_TIMEOUT_SECONDS not in [
         attr.Key for attr in props[attributes_key]
     ]:
         props[attributes_key].append(
-            TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
+            TargetGroupAttribute(Key=DEREGISTRATION_DELAY_TIMEOUT_SECONDS, Value="60")
         )
     nlb_valid = {
         "deregistration_delay.connection_termination.enabled": lambda x: x
@@ -162,7 +164,7 @@ def import_target_group_attributes(props: dict, target_def: dict, elbv2) -> None
         "preserve_client_ip.enabled": lambda x: x in ("true", "false"),
         "proxy_protocol_v2.enabled": lambda x: x in ("true", "false"),
         "stickiness.type": lambda x: x == "source_ip",
-        "deregistration_delay.timeout_seconds": lambda x: 0 <= int(x) <= 3600,
+        DEREGISTRATION_DELAY_TIMEOUT_SECONDS: lambda x: 0 <= int(x) <= 3600,
         "stickiness.enabled": lambda x: x in ("true", "false"),
     }
     alb_valid = {
@@ -172,7 +174,7 @@ def import_target_group_attributes(props: dict, target_def: dict, elbv2) -> None
         and not re.match(r"^AWSALB.*$|^AWSALBAPP.*|^AWSALBTG.*$", x),
         "stickiness.app_cookie.duration_seconds": lambda x: 1 <= int(x) <= 604800,
         "stickiness.lb_cookie.duration_seconds": lambda x: 1 <= int(x) <= 604800,
-        "deregistration_delay.timeout_seconds": lambda x: 0 <= int(x) <= 3600,
+        DEREGISTRATION_DELAY_TIMEOUT_SECONDS: lambda x: 0 <= int(x) <= 3600,
         "load_balancing.algorithm.type": lambda x: x
         in ("round_robin", "least_outstanding_requests"),
         "slow_start.duration_seconds": lambda x: 30 <= int(x) <= 900,

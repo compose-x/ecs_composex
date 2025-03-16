@@ -48,4 +48,4 @@ class ComposeTargetGroup(TargetGroup):
         generate_tg_outputs(self)
 
     def set_new_resource_outputs(self, output_definition):
-        return set_new_tg_output(self, output_definition)
+        return set_new_tg_output(output_definition)

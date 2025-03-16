@@ -57,7 +57,7 @@ class MergedTargetGroup(TargetGroup):
         generate_tg_outputs(self)
 
     def set_new_resource_outputs(self, output_definition):
-        return set_new_tg_output(self, output_definition)
+        return set_new_tg_output(output_definition)
 
     def associate_families(self, settings: ComposeXSettings):
         for _family in self.definition["Services"]:
