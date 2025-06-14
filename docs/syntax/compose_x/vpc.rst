@@ -96,23 +96,30 @@ policy name.
 Lookup
 ======
 
+You can Lookup the VPC ID (Subnets must use tags) via either
+
+* Identifier: vpc-abcd1234
+* Arn: arn:aws:ec2:eu-west-1:123456789012:vpc/vpc-0b33b2fb87c205260
+* Tags (recommended)
+
+See the ``uses_cases/vpc`` for examples.
+
 .. code-block:: yaml
 
     x-vpc:
       Lookup:
         VpcId:
           Tags:
-            - key: value
+            key: value
         PublicSubnets:
           Tags:
-            - vpc::usage: public
+            vpc::usage: public
         AppSubnets:
           Tags:
-            - vpc::usage: application
+            vpc::usage: application
         StorageSubnets:
           Tags:
-            - vpc::usage: storage0
-
+            vpc::usage: storage
 
 
 .. warning::
