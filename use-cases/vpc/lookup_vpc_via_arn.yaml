@@ -1,0 +1,18 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-vpc:
+  Lookup:
+    VpcId:
+      Arn: arn:aws:ec2:eu-west-1:373709687836:vpc/vpc-0b33b2fb87c205260
+    AppSubnets:
+      Tags:
+        vpc::usage: application
+    StorageSubnets:
+      Tags:
+        vpc::usage: storage
+    PublicSubnets:
+      Tags:
+        vpc::usage: public

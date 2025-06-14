@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2025 John Mille <john@compose-x.io>
-
+import botocore.client
 from boto3.session import Session
-from compose_x_common.aws.arns import ARNS_PER_TAGGINGAPI_TYPE
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.aws.arns import ARNS_PER_CFN_TYPE, ARNS_PER_TAGGINGAPI_TYPE
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
@@ -82,6 +82,55 @@ def validate_subnets_belong_with_vpc(
             )
 
 
+def lookup_vpc_id(vpc_id_details: dict, lookup_session: Session) -> str:
+    """
+    Function to find the VPC either by ID, Arn or Tags. Arn takes priority, then ID, then Tags
+    """
+    vpc_id = set_else_none("Identifier", vpc_id_details)
+    vpc_arn = set_else_none("Arn", vpc_id_details)
+    vpc_tags = set_else_none(TAGS_KEY, vpc_id_details)
+    arn_from_arn = True if vpc_arn and not vpc_id else False
+
+    if vpc_arn:
+        vpc_re = ARNS_PER_CFN_TYPE["AWS::EC2::VPC"]
+        if not vpc_re.match(vpc_arn):
+            raise ValueError(f"{vpc_arn} is not a valid VPC ARN")
+        vpc_id = vpc_re.match(vpc_arn).group("id")
+
+    if vpc_id:
+        cloud_control_client = lookup_session.client("cloudcontrol")
+        try:
+            cloud_control_client.get_resource(
+                TypeName="AWS::EC2::VPC",
+                Identifier=vpc_id,
+            )
+        except botocore.client.ClientError as error:
+            LOG.exception(error)
+            raise ValueError(f"{vpc_id} is not a valid VPC ID")
+        if arn_from_arn:
+            return vpc_arn
+        else:
+            ec2_client = lookup_session.client("ec2")
+            sts_client = lookup_session.client("sts")
+            account_id = sts_client.get_caller_identity()["Account"]
+            return (
+                f"arn:aws:ec2:{ec2_client.meta.region_name}:{account_id}:vpc/{vpc_id}"
+            )
+
+    elif vpc_tags:
+        return find_aws_resource_arn_from_tags_api(
+            vpc_id_details,
+            lookup_session,
+            "ec2:vpc",
+            allow_multi=False,
+        )
+    raise LookupError(
+        "Failed to find VPC with given details: {}".format(
+            vpc_id or vpc_arn or vpc_tags
+        )
+    )
+
+
 def lookup_x_vpc_settings(vpc_resource):
     """
     Method to set VPC settings from x-vpc
@@ -103,11 +152,9 @@ def lookup_x_vpc_settings(vpc_resource):
         APP_SUBNETS.title,
         STORAGE_SUBNETS.title,
     ]
-    vpc_arn = find_aws_resource_arn_from_tags_api(
+    vpc_arn = lookup_vpc_id(
         vpc_resource.lookup[VPC_ID.title],
         vpc_resource.lookup_session,
-        vpc_type,
-        allow_multi=False,
     )
     vpc_re = ARNS_PER_TAGGINGAPI_TYPE[vpc_type]
     vpc_settings = {
