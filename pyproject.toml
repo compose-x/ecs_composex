@@ -19,6 +19,8 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 
 ]
 include = [
@@ -53,7 +55,7 @@ Jinja2 = "^3.1.2"
 docker = ">=6.0.1,<8.0"
 troposphere-awscommunity-applicationautoscaling-scheduledaction = "^0.1.1"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 isort = "^5.13"
 placebo = "^0.10.0"
 pre-commit = "^3.6"
