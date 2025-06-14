@@ -104,9 +104,9 @@ def lookup_vpc_id(vpc_id_details: dict, lookup_session: Session) -> str:
                 TypeName="AWS::EC2::VPC",
                 Identifier=vpc_id,
             )
-        except botocore.client.ClientError:
-            LOG.error(f"{vpc_id} is not a valid VPC ID")
-            return None
+        except botocore.client.ClientError as error:
+            LOG.exception(error)
+            raise ValueError(f"{vpc_id} is not a valid VPC ID")
         if arn_from_arn:
             return vpc_arn
         else:
