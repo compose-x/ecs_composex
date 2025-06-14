@@ -88,7 +88,7 @@ x-elbv2:
     Settings:
       NoAllocateEips: true
     Listeners:
-      - Port: 9092
+      9092:
         Protocol: TLS
         Certificates:
           - x-acm: warp-cert
@@ -96,7 +96,7 @@ x-elbv2:
           - name: warp:warp:9092
             access: /
     Services:
-      warp:warp:
+      warp:warp:9092:
         port: 9092
         protocol: TCP
         healthcheck: 9092:TCP:2:2:15:5

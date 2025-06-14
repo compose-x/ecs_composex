@@ -68,7 +68,6 @@ class Elbv2(NetworkXResource):
         self.ingress = None
         self.lb_sg = None
         self.lb_eips = []
-        self.unique_service_lb = False
         self.lb = None
         self.new_listeners: list[ComposeListener] = []
         self.lookup_listeners: dict[int, LookupListener] = {}
@@ -91,7 +90,6 @@ class Elbv2(NetworkXResource):
         self.cloud_control_attributes_mapping = LB_CLOUD_CONTROL_ATTRIBUTES
         self.no_allocate_eips: bool = keyisset("NoAllocateEips", self.settings)
         self.retain_eips: bool = keyisset("RetainEips", self.settings)
-        self.validate_services()
         self.sort_props()
         self.module_name = MOD_KEY
         self.ref_parameter = LB_ARN
@@ -283,14 +281,6 @@ class Elbv2(NetworkXResource):
                 )
 
         self.debug_families_targets()
-
-    def validate_services(self):
-        services_names = list(self.services.keys())
-        if len(services_names) == 1:
-            LOG.info(
-                f"LB {self.name} only has a unique service. LB will be deployed with the service stack."
-            )
-            self.unique_service_lb = True
 
     def sort_props(self):
         self.lb_is_public = (
