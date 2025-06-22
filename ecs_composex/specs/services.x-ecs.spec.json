@@ -20,16 +20,7 @@
     },
     "OperatingSystemFamily": {
       "type": "string",
-      "enum": [
-        "LINUX",
-        "WINDOWS_SERVER_2004_CORE",
-        "WINDOWS_SERVER_2016_FULL",
-        "WINDOWS_SERVER_2019_CORE",
-        "WINDOWS_SERVER_2019_FULL",
-        "WINDOWS_SERVER_2022_CORE",
-        "WINDOWS_SERVER_2022_FULL",
-        "WINDOWS_SERVER_20H2_CORE"
-      ],
+      "pattern": "LINUX|^WINDOWS[\\S]+",
       "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-runtimeplatform.html#cfn-ecs-taskdefinition-runtimeplatform-operatingsystemfamily"
     },
     "CapacityProviderStrategy": {
