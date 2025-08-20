@@ -1,0 +1,19 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-vpc:
+  Lookup:
+    VpcId:
+      Tags:
+        Name: e2e-lookup-vpc
+    AppSubnets:
+      Tags:
+        vpc::usage: application
+    StorageSubnets:
+      Tags:
+        vpc::usage: storage
+    PublicSubnets:
+      Tags:
+        vpc::usage: public

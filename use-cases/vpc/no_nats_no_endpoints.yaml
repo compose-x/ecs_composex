@@ -1,0 +1,5 @@
+x-vpc:
+  Properties:
+    VpcCidr: 192.168.220.0/24 # A simple CIDR with plenty of room for the deployment.
+    DisableNat: True        # Although the Public, App and Storage subnets are created, no NAT nor route is created.
+    Endpoints: {} # Set to {} to disable creating the default VPC endpoints Compose-X use. We won't be needing them.
