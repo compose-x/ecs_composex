@@ -69,14 +69,17 @@ with the ARN of the secret
 
     Services:
       app01:
-        Access: RW
+        Access:
+          DBCluster: RO
       app03:
-        Access: RW
+        Access:
+          DBCluster: RO
         GrantTaskAccess:
           SecretEnvName: DB_B_SECRET # Grants access to the secret, sets env var DB_B_SECRET to the ARN
       youtoo:
-        Access: RW
-        GrantTaskAccess: True # Grants access to the secret, not setting an env var
+        Access:
+          DBCluster: RO
+        GrantTaskAccess: true # Grants access to the secret, not setting an env var
 
 .. _rds_generate_connection_string:
 
@@ -117,7 +120,7 @@ environment variable.
           EngineVersion: "5.7"
           BackupRetentionPeriod: 1
           DatabaseName: wordpress
-          StorageEncrypted: True
+          StorageEncrypted: true
           Tags:
             - Key: Name
               Value: "dummy-db"
@@ -235,7 +238,6 @@ might re-define in **RdsFeatures** will be skipped. If you wish to use **RdsFeat
 
 
 .. code-block:: yaml
-    :caption: Example with different bucket names syntax
 
     x-rds:
       dbB:
@@ -281,10 +283,6 @@ It will also automatically identify the DB security group and add an ingress rul
         Lookup:
           cluster:
             Name: cluster-identifier
-            Tags:
-              - sometag: value
-          instance:
-            Name: DB Instance Id
             Tags:
               - sometag: value
           secret:
@@ -335,7 +333,7 @@ Examples
       dbname:
         Properties:
           Engine: aurora-mysql
-          EngineVersion: 5.7.12
+          EngineVersion: "5.7.12"
         Services:
           app01:
             Access:

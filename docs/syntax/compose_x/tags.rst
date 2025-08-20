@@ -16,7 +16,9 @@ Mapping syntax
     :caption: Key/Value structure
 
     x-tags:
-      str: value
+      Environment: production
+      Application: web-server
+      Owner: devops-team
 
 List syntax
 -------------
@@ -27,15 +29,23 @@ Alternatively, you can use the default AWS CFN implementation
     :caption: List of Key/Value tags
 
     x-tags:
-      - Key: sts
-        Value: <value>
+      - Key: Environment
+        Value: production
+      - Key: Application
+        Value: web-server
+      - Key: Owner
+        Value: devops-team
 
 
 Default tags
 =============
 
-CreatedByComposeX: true         # Allows you to identify quickly if that resource was created by Compose-X
-compose-x::version: <value>     # Defines which version of compose-x was used to create this resource.
+The following tags are automatically added to all resources created by ECS Compose-X:
+
+.. code-block:: yaml
+
+    CreatedByComposeX: "true"         # Allows you to identify quickly if that resource was created by Compose-X
+    compose-x::version: "1.1.7"      # Defines which version of compose-x was used to create this resource
 
 JSON Schema
 ============

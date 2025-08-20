@@ -14,10 +14,13 @@ services.x-ecs
       serviceA:
         image: nginx/nginx
         x-ecs:
-          CapacityProviderStrategy: [CapacityProviderStrategyItem]
-          EnableExecuteCommand: bool
-          CpuArchitecture: str
-          OperatingSystemFamily: str
+          CapacityProviderStrategy:
+            - CapacityProvider: FARGATE
+              Base: 1
+              Weight: 2
+          EnableExecuteCommand: true
+          CpuArchitecture: ARM64
+          OperatingSystemFamily: LINUX
 
 CapacityProviderStrategy
 ============================
@@ -76,6 +79,7 @@ Examples
             - CapacityProvider: FARGATE_SPOT
               Base: 4
               Weight: 8
+          EnableExecuteCommand: true
 
 
 .. code-block:: yaml
@@ -91,6 +95,7 @@ Examples
             - CapacityProvider: FARGATE
               Base: 1
               Weight: 2
+          CpuArchitecture: X86_64
       nginx:
         deploy:
           labels:
@@ -103,6 +108,7 @@ Examples
             - CapacityProvider: FARGATE_SPOT
               Base: 4
               Weight: 8
+          CpuArchitecture: X86_64
 
 In the above example, where grafana and nginx are part of the same task definition and therefore same ECS Service,
 we do the following:

@@ -15,7 +15,7 @@ services.x-alarms
       app01:
         x-alarms:
           Predefined:
-            RuleName:
+            HighCpuUsageAndMaxScaledOut:
               Topics: []        # Similar to other x-alarms settings
               Settings: {}      # Input values override.
 
@@ -65,10 +65,14 @@ count is equal to the max scaling capacity (or otherwise overriden value).
 .. code-block:: yaml
     :caption: Example at 50% CPU usage and override to 4 tasks.
 
-    - Name: HighCpuUsageAndMaxScaledOut
-      Settings:
-        CPUUtilization: 50             # In percent
-        RunningTaskCount: 4            # Number of tasks to evaluate against.
+    services:
+      app01:
+        x-alarms:
+          Predefined:
+            HighCpuUsageAndMaxScaledOut:
+              Settings:
+                CPUUtilization: 50             # In percent
+                RunningTaskCount: 4            # Number of tasks to evaluate against.
 
 
 HighRamUsageAndMaxScaledOut
@@ -89,12 +93,16 @@ This rule will trigger an alert when the CPUUtilization of a given service will 
 count is equal to the max scaling capacity (or otherwise overriden value).
 
 .. code-block:: yaml
-    :caption: Example at 50% CPU usage and override to 4 tasks.
+    :caption: Example at 50% RAM usage and override to 4 tasks.
 
-    - Name: HighRamUsageAndMaxScaledOut
-      Settings:
-        MemoryUtilization: 50          # In percent
-        RunningTaskCount: 4            # Number of tasks to evaluate against.
+    services:
+      app01:
+        x-alarms:
+          Predefined:
+            HighRamUsageAndMaxScaledOut:
+              Settings:
+                MemoryUtilization: 50          # In percent
+                RunningTaskCount: 4            # Number of tasks to evaluate against.
 
 
 
