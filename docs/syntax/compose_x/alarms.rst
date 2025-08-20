@@ -17,8 +17,18 @@ x-alarms
         Properties: {}
         MacroParameters: {}
         Settings: {}
-        Services: {}
-        Topics: []
+        Services:
+          service-name:
+            Scaling:
+              Steps:
+                - LowerBound: 0
+                  UpperBound: 100
+                  Count: 2
+        Topics:
+          - TopicArn: "arn:aws:sns:us-east-1:123456789012:my-topic"
+            NotifyOn: alarm
+          - x-sns: topic-name
+            NotifyOn: all
 
 Define AWS CloudWatch alarms on the different resources, services, and define actions.
 
@@ -50,10 +60,24 @@ Services
 
     x-alarms:
       kafka-scaling-01:
-        Properties: {}
+        Properties:
+          AlarmName: "high-cpu-usage"
+          MetricName: "CPUUtilization"
+          Namespace: "AWS/ECS"
+          Statistic: "Average"
+          Period: 300
+          EvaluationPeriods: 2
+          Threshold: 80.0
+          ComparisonOperator: "GreaterThanThreshold"
         Services:
-          <service_name>:
-            Scaling: {} # Service scaling definition
+          my-service:
+            Scaling:
+              Steps:
+                - LowerBound: 0
+                  UpperBound: 100
+                  Count: 2
+                - LowerBound: 100
+                  Count: 4
 
 
 Scaling
@@ -72,11 +96,19 @@ Topics
 
     x-alarms:
       alarms-01:
-        Properties: {}
+        Properties:
+          AlarmName: "service-health-check"
+          MetricName: "HealthyHostCount"
+          Namespace: "AWS/ApplicationELB"
+          Statistic: "Average"
+          Period: 60
+          EvaluationPeriods: 2
+          Threshold: 1.0
+          ComparisonOperator: "LessThanThreshold"
         Topics:
-          - TopicArn: <str>
+          - TopicArn: "arn:aws:sns:us-east-1:123456789012:alerts-topic"
             NotifyOn: okay
-          - x-sns: <str>
+          - x-sns: notification-topic
             NotifyOn: all
 
 TopicArn
@@ -153,7 +185,7 @@ to define is the Alarm expression
 .. code-block:: yaml
 
     MacroParameters:
-      CompositeExpression: <str>
+      CompositeExpression: "ALARM(alarm-01) and ALARM(alarm-02)"
 
 ServiceName
 --------------
@@ -161,9 +193,24 @@ ServiceName
 Allows to set the service name or family defined in the compose file, and automatically fills in the ``Cluster``
 and ``ServiceName`` Dimensions.
 
+.. code-block:: yaml
+
+    x-alarms:
+      service-cpu-alarm:
+        MacroParameters:
+          ServiceName: my-web-service
+        Properties:
+          MetricName: "CPUUtilization"
+          Namespace: "AWS/ECS"
+          Statistic: "Average"
+          Period: 300
+          EvaluationPeriods: 2
+          Threshold: 75.0
+          ComparisonOperator: "GreaterThanThreshold"
+
 .. note::
 
-    If you did set ``Dimensions`` in the Properties, these will be overriden.
+    If you did set ``Dimensions`` in the Properties, these will be overridden.
 
 CompositeExpression
 --------------------

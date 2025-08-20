@@ -73,20 +73,22 @@ LinksTo
 
 Type: List of Strings
 
-AllowedValues (also default):
+AllowedValues:
 
 * EcsExecutionRole
 * EcsTaskRole
 
+Default: ["EcsExecutionRole"]
 
 .. code-block:: yaml
 
-        secret-name:
-          x-secrets:
-            Name: String
-            LinksTo:
-              - EcsExecutionRole
-              - EcsTaskRole
+    secrets:
+      secret-name:
+        x-secrets:
+          Name: "/path/to/secret"
+          LinksTo:
+            - EcsExecutionRole
+            - EcsTaskRole
 
 .. warning::
 
@@ -105,9 +107,12 @@ Type: List of objects/dicts
 .. code-block:: yaml
     :caption: JsonKeys objects structure
 
-    SecretKey: str
-    VarName: str
-    Transform: str
+    JsonKeys:
+      - SecretKey: "username"
+        VarName: "DB_USER"
+        Transform: "capitalize"
+      - SecretKey: "password"
+        VarName: "DB_PASSWORD"
 
 SecretKey
 """"""""""""
@@ -149,7 +154,7 @@ Examples
     secrets:
       topsecret_info:
         x-secrets:
-          Name: /path/to/my/secret
+          Name: "/path/to/my/secret"
 
     services:
       serviceA:
@@ -166,7 +171,7 @@ Examples
           LinksTo:
             - EcsExecutionRole
             - EcsTaskRole
-          Name: SFTP/asl-cscs-files-dev
+          Name: "SFTP/asl-cscs-files-dev"
 
 
 .. code-block:: yaml
@@ -175,20 +180,20 @@ Examples
     secrets:
       zyx:
         x-secrets:
-          Name: secret/with/kmskey
+          Name: "secret/with/kmskey"
           Lookup:
             Tags:
               - costcentre: lambda
               - composexdev: "yes"
           JsonKeys:
-            - SecretKey: username
-              VarName: PSQL_USERNAME
-            - SecretKey: password
-              VarName: PSQL_PASSWORD
+            - SecretKey: "username"
+              VarName: "PSQL_USERNAME"
+            - SecretKey: "password"
+              VarName: "PSQL_PASSWORD"
 
 
 .. code-block:: yaml
-    :caption: Secret with assignment to Task and Execution Role
+    :caption: Secret with assignment to Task and Execution Role using ARN
 
     secrets:
       abcd: {}
@@ -197,7 +202,7 @@ Examples
           LinksTo:
             - EcsExecutionRole
             - EcsTaskRole
-          Name: arn:aws:secretsmanager:eu-west-1:123456789012:secret:/secret/abcd
+          Name: "arn:aws:secretsmanager:eu-west-1:123456789012:secret:/secret/abcd"
 
 JSON Schema
 ============

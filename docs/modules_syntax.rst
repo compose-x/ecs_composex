@@ -7,6 +7,7 @@
     :titlesonly:
 
     syntax/compose_x/ecs.details/*
+    syntax/compose_x/ecs.details/environment
 
 
 .. toctree::

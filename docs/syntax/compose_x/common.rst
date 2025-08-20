@@ -222,9 +222,9 @@ This is accomplished by using **AWS Resources Group Tags API** which means, you 
 
     Lookup:
       Tags:
-        - Key: Value
-        - Key: Value
-      RoleArn: <str|optional>
+        - Environment: production
+        - Application: web-service
+      RoleArn: "arn:aws:iam::123456789012:role/cross-account-lookup"
 
 .. hint::
 
@@ -233,8 +233,29 @@ This is accomplished by using **AWS Resources Group Tags API** which means, you 
 Tags
 ------
 
-The tags are a list of Tags that have been assigned to the resource. Based on the type of resource, this might
+The tags are a list of key-value pairs that have been assigned to the resource. Based on the type of resource, this might
 need to resolve to a single specific resource in your AWS account / region.
+
+Tags can be specified in two formats:
+
+.. code-block:: yaml
+    :caption: Object format (key-value pairs)
+
+    Tags:
+      Environment: production
+      Application: web-service
+      Owner: devops-team
+
+.. code-block:: yaml
+    :caption: Array format (list of objects)
+
+    Tags:
+      - Key: Environment
+        Value: production
+      - Key: Application
+        Value: web-service
+      - Key: Owner
+        Value: devops-team
 
 RoleArn
 --------
@@ -247,6 +268,25 @@ your templates in a central CICD account.
 
     Compose-X will never modify the looked up object!
 
+Example Lookup Configuration
+-----------------------------
+
+.. code-block:: yaml
+    :caption: Complete lookup example
+
+    x-s3:
+      existing-bucket:
+        Lookup:
+          Tags:
+            Environment: production
+            Project: myapp
+          RoleArn: "arn:aws:iam::123456789012:role/cross-account-lookup"
+        Services:
+          web-service:
+            Access:
+              bucket: ListOnly
+              objects: RW
+
 
 .. warning::
 
@@ -256,6 +296,10 @@ your templates in a central CICD account.
 .. tip::
 
     Tags keys and values are case sensitive.
+
+.. note::
+
+    When using the object format for tags, ECS Compose-X will automatically convert them to the array format internally for AWS API compatibility.
 
 .. _settings_syntax_reference:
 
