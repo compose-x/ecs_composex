@@ -209,7 +209,7 @@ class ComposeFamily:
                 if self.task_ephemeral_storage >= 21
                 else NoValue
             ),
-            InferenceAccelerators=NoValue,
+            # InferenceAccelerators=NoValue,
             IpcMode=If(
                 ecs_conditions.USE_WINDOWS_OS_T,
                 NoValue,
