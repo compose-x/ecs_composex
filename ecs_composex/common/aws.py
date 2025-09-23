@@ -398,7 +398,7 @@ def plan(
     """
     validate_can_deploy_stack_from_settings(settings, root_stack)
     client = settings.session.client("cloudformation")
-    change_set_name = f"{settings.name}" + "_ecs_compose_x_" + dt.now().strftime("%s")
+    change_set_name = f"{settings.name}" + "-ecs-compose-x-" + dt.now().strftime("%s")
     if assert_can_create_stack(client, settings.name) or assert_can_update_stack(
         client, settings.name
     ):
