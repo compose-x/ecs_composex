@@ -11,6 +11,7 @@ secrets:
   zyx: {}
 services:
   app01:
+    stop_grace_period: 42s
     logging:
       driver: awslogs
       options:
