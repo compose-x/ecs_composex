@@ -28,7 +28,8 @@ include = [
   "MANIFEST.in",
   "NOTICES.rst",
   "ecs_composex/**/*.json",
-  "ecs_composex/**/*.j2"
+  "ecs_composex/**/*.j2",
+  "vendor-wheels/**/*.whl"
 ]
 exclude = ["*.pyc", "*~", "*pycache*"]
 
@@ -54,6 +55,7 @@ retry2 = "^0.9"
 Jinja2 = "^3.1.2"
 docker = ">=6.0.1,<8.0"
 troposphere-awscommunity-applicationautoscaling-scheduledaction = "^0.1.1"
+setuptools = ">=65.5.0"
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13"

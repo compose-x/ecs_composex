@@ -53,15 +53,25 @@ Useful Links
 Installation
 =====================
 
+.. note::
+
+    **Python 3.12+ Users**: Due to a dependency issue with ``flatdict`` 4.0.1, you may need to install it separately first.
+    A pre-built wheel is provided in the ``vendor-wheels/`` directory of this repository.
+
 .. code-block:: bash
 
     # Inside a python virtual environment
     python3 -m venv venv
     source venv/bin/activate
-    pip install pip -U
+    pip install pip setuptools -U
+    
+    # For Python 3.12+, install flatdict first using the provided wheel
+    pip install vendor-wheels/flatdict-4.0.1-py3-none-any.whl  # If installing from repository
+    
     pip install ecs-composex
 
     # For your user only
+    pip install --upgrade setuptools
     pip install ecs-composex --user
 
 Usage
