@@ -28,7 +28,8 @@ include = [
   "MANIFEST.in",
   "NOTICES.rst",
   "ecs_composex/**/*.json",
-  "ecs_composex/**/*.j2"
+  "ecs_composex/**/*.j2",
+  "vendor-wheels/**/*.whl"
 ]
 exclude = ["*.pyc", "*~", "*pycache*"]
 
