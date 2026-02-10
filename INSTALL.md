@@ -46,8 +46,10 @@ pip install ecs-composex
 **Note**: If you still encounter issues, try installing flatdict separately first:
 
 ```bash
-# Build flatdict from source with setuptools available
+# Install setuptools as a prerequisite
 pip install setuptools>=65.5.0
+
+# Download flatdict source
 pip download --no-deps --no-binary=:all: flatdict==4.0.1
 tar -xzf flatdict-4.0.1.tar.gz
 cd flatdict-4.0.1

@@ -67,7 +67,6 @@ Installation
     
     # For Python 3.12+, install flatdict first using the provided wheel
     pip install vendor-wheels/flatdict-4.0.1-py3-none-any.whl  # If installing from repository
-    # Or download from PyPI with: pip install flatdict==4.0.1 --no-build-isolation
     
     pip install ecs-composex
 
