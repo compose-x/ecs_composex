@@ -4,6 +4,7 @@
 """
 Module for AWS CloudMap
 """
+
 import re
 from os import path
 

@@ -10,6 +10,7 @@ Module to manage the ``compute`` settings of the ECS Service
 Unrelated to the Task compute settings (RAM/CPU)
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

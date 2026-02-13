@@ -3,7 +3,6 @@
 
 """Parameters for AWS Managed Prometheus (APS)"""
 
-
 from ecs_composex.common.troposphere_tools import Parameter
 
 WORKSPACE_GROUP = "Managed Prometheus"

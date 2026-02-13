@@ -25,13 +25,13 @@ phases:
       - SUFFIX=${COMMIT_HASH:=$EPOCH}
       - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
       - |
-          if ! [ -z "${CODEBUILD_WEBHOOK_TRIGGER+x}" ]; then
-            echo TRIGGER is $CODEBUILD_WEBHOOK_TRIGGER
-            PRE=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 1`;
-            echo PRE is $PRE
-            echo SUFFIX is $SUFFIX
-            if [ "${PRE}" == "tag" ]; then SUFFIX=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 2`; TAG_RELEASE=1 ; fi
-          fi
+        if ! [ -z "${CODEBUILD_WEBHOOK_TRIGGER+x}" ]; then
+          echo TRIGGER is $CODEBUILD_WEBHOOK_TRIGGER
+          PRE=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 1`;
+          echo PRE is $PRE
+          echo SUFFIX is $SUFFIX
+          if [ "${PRE}" == "tag" ]; then SUFFIX=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 2`; TAG_RELEASE=1 ; fi
+        fi
       - echo SUFFIX ends up being $SUFFIX
       - pip install docker-compose -U
 

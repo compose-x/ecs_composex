@@ -4,6 +4,7 @@
 """
 Common functions and variables fetched from AWS.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
@@ -96,7 +97,7 @@ def define_tagsgroups_filter_tags(tags: list[dict]) -> list:
 
 def get_resources_from_tags(
     session: Session, aws_resource_search: str, search_tags: list
-) -> Union[dict, None]:
+) -> dict | None:
     """
     Function to retrieve AWS Resources ARNs from the tags using the Resource Groups Tagging API
     """
@@ -114,7 +115,7 @@ def get_resources_from_tags(
 
 def handle_multi_results(
     arns: list[str], name: str, res_type: str, regexp: str, allow_multi: bool = False
-) -> Union[str, list[str]]:
+) -> str | list[str]:
     """
     Function to evaluate more than one result to see if we can match a unique name.
 
@@ -156,7 +157,7 @@ def handle_search_results(
     res_types,
     aws_resource_search: str,
     allow_multi: bool = False,
-) -> Union[str, list[str]]:
+) -> str | list[str]:
     """
     Function to parse tag resource search results
 
@@ -201,7 +202,7 @@ def find_aws_resource_arn_from_tags_api(
     aws_resource_search: str,
     types: dict = None,
     allow_multi: bool = False,
-) -> Union[str, list[str]]:
+) -> str | list[str]:
     """
     Function to find the RDS DB based on info
 
@@ -298,7 +299,7 @@ def validate_can_deploy_stack_from_settings(
         )
 
 
-def deploy(settings: ComposeXSettings, root_stack: ComposeXStack) -> Union[str, None]:
+def deploy(settings: ComposeXSettings, root_stack: ComposeXStack) -> str | None:
     """
     Function to deploy (create or update) the stack to CFN.
     """

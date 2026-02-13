@@ -5,7 +5,6 @@
 Module to define and match RDS Features to other AWS resources.
 """
 
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

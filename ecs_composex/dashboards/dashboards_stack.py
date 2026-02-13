@@ -4,6 +4,7 @@
 """
 Module to manage the creation of Dashboards
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

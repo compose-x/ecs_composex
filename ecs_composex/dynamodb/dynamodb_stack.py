@@ -4,6 +4,7 @@
 """
 Module to create the root stack for DynamoDB tables
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

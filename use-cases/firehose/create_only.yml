@@ -95,8 +95,8 @@ x-kms:
   stream-encryption-key:
     Lookup:
       Tags:
-        - usage: unknown
-        - ForLookup: "true"
+        ECSCLuster: ANewCluster
+        Name: ANewCluserEncryptionKey
 
 services:
   ad-hoc-testing:

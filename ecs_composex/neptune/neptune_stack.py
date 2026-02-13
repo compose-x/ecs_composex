@@ -4,6 +4,7 @@
 """
 AWS DocumentDB entrypoint for ECS ComposeX
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

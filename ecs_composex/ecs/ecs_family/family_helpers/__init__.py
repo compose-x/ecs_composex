@@ -322,7 +322,7 @@ def update_env_var_to_parameter(
     family: ComposeFamily,
     service: ComposeService,
     env_var: Environment,
-    set_as_params: Union[list, dict],
+    set_as_params: list | dict,
 ) -> None:
     """
     Function that will replace a user-defined environment variable with a Template Parameter

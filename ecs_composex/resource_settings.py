@@ -4,6 +4,7 @@
 """
 Module to handle resource settings definition to containers.
 """
+
 from __future__ import annotations
 
 import copy

@@ -4,6 +4,7 @@
 """
 Module to handle the AWS ES Stack and resources creation
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

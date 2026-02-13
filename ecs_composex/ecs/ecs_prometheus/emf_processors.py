@@ -22,7 +22,7 @@ from ecs_composex.ecs.managed_sidecars.nginx_prometheus_exporter import (
 METRICS_DEFAULT_PATH = r"/metrics"
 
 
-def generate_ecs_sd_service_name_pattern(family: ComposeFamily) -> Union[str]:
+def generate_ecs_sd_service_name_pattern(family: ComposeFamily) -> str:
     """
     Generate the ecs_service_discovery configuration for a given set of ECS Task Families
     """

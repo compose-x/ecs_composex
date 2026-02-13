@@ -5,6 +5,7 @@
 """
 OpenSearch module to manage creation of new OpenSearch domains
 """
+
 import json
 import re
 

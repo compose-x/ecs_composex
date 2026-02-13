@@ -99,7 +99,7 @@ class ServiceLogging:
         return self._service
 
     @property
-    def family(self) -> Union[ComposeFamily, None]:
+    def family(self) -> ComposeFamily | None:
         if self.service.family:
             return self.service.family
         return None
@@ -125,7 +125,7 @@ class ServiceLogging:
         return False
 
     @property
-    def log_configuration(self) -> Union[LogConfiguration, None]:
+    def log_configuration(self) -> LogConfiguration | None:
         return self._log_configuration
 
     @log_configuration.setter

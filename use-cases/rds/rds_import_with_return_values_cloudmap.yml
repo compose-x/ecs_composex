@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 x-cloudmap:
   private:
     Name: testing.cluster
@@ -8,11 +8,12 @@ x-rds:
       cluster:
         Name: database-1
         Tags:
-          - serverless: 'True'
-      secret:
-        Name: GHToken
+          - serverless: "True"
+      secret: &secret
+        Name: secret/with/kmskey
         Tags:
-          - useless: 'yes'
+          composexdev: "yes"
+          costcentre: lambda
     Services:
       app03:
         ReturnValues:
@@ -29,11 +30,8 @@ x-rds:
       cluster:
         Name: database-1
         Tags:
-          - serverless: 'True'
-      secret:
-        Name: GHToken
-        Tags:
-          - useless: 'yes'
+          - serverless: "True"
+      secret: *secret
     Services:
       app03:
         ReturnValues:
