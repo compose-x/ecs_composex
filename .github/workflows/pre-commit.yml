@@ -11,5 +11,4 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - run: python my_script.py
       - uses: pre-commit/action@v3.0.0
