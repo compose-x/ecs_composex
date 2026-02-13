@@ -30,7 +30,6 @@ Resources:
       OrganizationId: !Ref AWS::NoValue
       Principal: "*"
 
-
 Outputs:
   LayerVersion:
     Value: !Ref LambdaLayer

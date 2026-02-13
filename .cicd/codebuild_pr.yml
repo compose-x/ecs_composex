@@ -22,7 +22,26 @@ Parameters:
     Type: String
   BuildLogsRetentionDays:
     Type: Number
-    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    AllowedValues:
+      [
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        365,
+        400,
+        545,
+        731,
+        1827,
+        3653,
+      ]
     Default: 14
   TemplatesBucket:
     Type: String
@@ -44,14 +63,14 @@ Mappings:
       Prefix: https://github.com/
 
 Conditions:
-  UseGitHub: !Equals [ !Ref RepositoryProvider, 'GitHub']
-  UseCodeCommit: !Equals [ !Ref RepositoryProvider, 'CodeCommit']
+  UseGitHub: !Equals [!Ref RepositoryProvider, "GitHub"]
+  UseCodeCommit: !Equals [!Ref RepositoryProvider, "CodeCommit"]
 
 Resources:
   BuildLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub 'codebuild/pr-builds/${RepositoryName}'
+      LogGroupName: !Sub "codebuild/pr-builds/${RepositoryName}"
       RetentionInDays: !Ref BuildLogsRetentionDays
   CodeBuildRole:
     Type: AWS::IAM::Role
@@ -61,18 +80,18 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/ResourceGroupsandTagEditorReadOnlyAccess
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Action:
               - sts:AssumeRole
             Effect: Allow
             Principal:
               Service:
-                - !Sub 'codebuild.${AWS::URLSuffix}'
+                - !Sub "codebuild.${AWS::URLSuffix}"
       Policies:
         - PolicyName: ContentAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Sid: S3ObjectsAccess
                 Action:
@@ -80,34 +99,34 @@ Resources:
                   - s3:GetObject*
                 Effect: Allow
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${TemplatesBucket}/*'
-                  - !Sub 'arn:${AWS::Partition}:s3:::${ReportsBucket}/*'
-                  - !Sub 'arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}/*'
+                  - !Sub "arn:${AWS::Partition}:s3:::${TemplatesBucket}/*"
+                  - !Sub "arn:${AWS::Partition}:s3:::${ReportsBucket}/*"
+                  - !Sub "arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}/*"
               - Sid: S3BucketAccess
                 Action:
                   - s3:ListBucket
                 Effect: Allow
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${TemplatesBucket}'
-                  - !Sub 'arn:${AWS::Partition}:s3:::${ReportsBucket}'
-                  - !Sub 'arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}'
+                  - !Sub "arn:${AWS::Partition}:s3:::${TemplatesBucket}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${ReportsBucket}"
+                  - !Sub "arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}"
               - Sid: CloudWatchLogs
                 Effect: Allow
                 Action:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub '${BuildLogsGroup.Arn}'
+                  - !Sub "${BuildLogsGroup.Arn}"
               - Sid: CloudFormationAccess
                 Resource:
-                  - '*'
+                  - "*"
                 Effect: Allow
                 Action:
-                  - 'cloudformation:ValidateTemplate'
+                  - "cloudformation:ValidateTemplate"
               - Sid: CodeBuildAccess
                 Effect: Allow
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*'
+                  - !Sub "arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*"
                 Action:
                   - codebuild:UpdateReportGroup
                   - codebuild:CreateReportGroup
@@ -118,9 +137,9 @@ Resources:
   BuildUnittest:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub 'PR-TESTING-${RepositoryName}'
-      ServiceRole: !GetAtt 'CodeBuildRole.Arn'
-      Description: !Sub 'Publishes blog on updates'
+      Name: !Sub "PR-TESTING-${RepositoryName}"
+      ServiceRole: !GetAtt "CodeBuildRole.Arn"
+      Description: !Sub "Publishes blog on updates"
       LogsConfig:
         CloudWatchLogs:
           GroupName: !Ref BuildLogsGroup
@@ -143,8 +162,8 @@ Resources:
         ReportBuildStatus: True
         Location: !If
           - UseGitHub
-          - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
-          - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
+          - !Sub "https://github.com/${RepositoryOrganization}/${RepositoryName}"
+          - !Sub "https://codecommit.${AWS::Region}.${AWS::URLSuffix}"
         InsecureSsl: False
         BuildSpec: !Ref BuildspecFile
       Triggers:
@@ -154,10 +173,10 @@ Resources:
               Pattern: "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
               ExcludeMatchedPattern: False
             - Type: HEAD_REF
-              Pattern: '^refs/heads/.*$'
+              Pattern: "^refs/heads/.*$"
               ExcludeMatchedPattern: False
             - Type: BASE_REF
-              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
+              Pattern: !Sub "^refs/heads/${ReferenceBranchName}$"
               ExcludeMatchedPattern: False
             - Type: FILE_PATH
               Pattern: "(ecs_composex/\\S+\\.py$|\\.cicd/\\buildspec.*pr\\.yml)"
