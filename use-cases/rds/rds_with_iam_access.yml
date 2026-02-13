@@ -1,9 +1,9 @@
-version: '3.8'
+version: "3.8"
 x-rds:
   dbA:
     MacroParameters:
       Engine: aurora-postgresql
-      EngineVersion: '14.6'
+      EngineVersion: "14.6"
     Services:
       app01:
         Access:
@@ -38,7 +38,7 @@ x-rds:
       EnableHttpEndpoint: true
       EnableIAMDatabaseAuthentication: true
       Engine: aurora-postgresql
-      EngineVersion: '14.6'
+      EngineVersion: "14.6"
       MasterUserPassword: dummy
       MasterUsername: dummy
       Port: 5432

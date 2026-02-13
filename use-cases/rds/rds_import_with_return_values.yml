@@ -1,15 +1,16 @@
-version: '3.8'
+version: "3.8"
 x-rds:
   dbA:
     Lookup:
       cluster:
         Name: database-1
         Tags:
-          - serverless: 'True'
+          - serverless: "True"
       secret:
-        Name: GHToken
+        Name: secret/with/kmskey
         Tags:
-          - useless: 'yes'
+          composexdev: "yes"
+          costcentre: lambda
     Services:
       app03:
         ReturnValues:

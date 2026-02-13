@@ -21,8 +21,8 @@ x-kms:
   keyC:
     Lookup:
       Tags:
-        ForLookup: "true"
-        usage: unknown
+        ECSCLuster: ANewCluster
+        Name: ANewCluserEncryptionKey
     Services:
       app03:
         Access: EncryptDecrypt

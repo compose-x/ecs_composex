@@ -1,9 +1,9 @@
-version: '3.8'
+version: "3.8"
 x-rds:
   dbA:
     MacroParameters:
       Engine: aurora-postgresql
-      EngineVersion: '14.6'
+      EngineVersion: "14.6"
       Instances:
         - DBAllocatedStorage: 50
           DBInstanceClass: db.m5a.large
@@ -28,7 +28,7 @@ x-rds:
       EnableHttpEndpoint: true
       EnableIAMDatabaseAuthentication: true
       Engine: aurora-postgresql
-      EngineVersion: '14.6'
+      EngineVersion: "14.6"
       MasterUserPassword: dummy
       MasterUsername: dummy
       Port: 5432
@@ -49,12 +49,12 @@ x-rds:
   dbC:
     MacroParameters:
       Engine: aurora-postgresql
-      EngineVersion: '14.6'
+      EngineVersion: "14.6"
       ParametersGroups:
         Description: CloudFormation Sample Aurora Parameter Group
         Family: aurora5.6
         Parameters:
-          innodb_buffer_pool_size: '{DBInstanceClassMemory*3/4}'
+          innodb_buffer_pool_size: "{DBInstanceClassMemory*3/4}"
           max_allowed_packet: 1024
           sql_mode: IGNORE_SPACE
     Services:
