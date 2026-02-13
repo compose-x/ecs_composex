@@ -16,7 +16,7 @@ from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.elbv2.elbv2_params import TGT_FULL_NAME, TGT_GROUP_ARN, TGT_GROUP_NAME
 
 
-def set_tg_outputs(target_group: Union[MergedTargetGroup, ComposeTargetGroup]):
+def set_tg_outputs(target_group: MergedTargetGroup | ComposeTargetGroup):
 
     target_group.output_properties.update(
         {
@@ -39,7 +39,7 @@ def set_tg_outputs(target_group: Union[MergedTargetGroup, ComposeTargetGroup]):
     )
 
 
-def generate_tg_outputs(target_group: Union[ComposeTargetGroup, MergedTargetGroup]):
+def generate_tg_outputs(target_group: ComposeTargetGroup | MergedTargetGroup):
     for (
         attribute_parameter,
         output_definition,

@@ -87,7 +87,7 @@ def set_cw_prometheus_config_parameter(
 
 
 def set_cw_config_parameter(
-    family: ComposeFamily, enable_emf: Union[dict, bool] = None, **prometheus_options
+    family: ComposeFamily, enable_emf: dict | bool = None, **prometheus_options
 ) -> SSMParameter:
     """
     Function to add the SSM Parameter representing the Prometheus scrapper config

@@ -4,6 +4,7 @@
 """
 Module to handle import/create AWS Kinesis Data Streams
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

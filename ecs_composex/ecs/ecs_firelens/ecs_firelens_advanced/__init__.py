@@ -4,6 +4,7 @@
 """
 Handles ``Rendered`` section of the FireLens configuration
 """
+
 from __future__ import annotations
 
 import json

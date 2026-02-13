@@ -18,29 +18,22 @@ repos:
       - id: detect-private-key
       - id: fix-byte-order-marker
 
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
-    hooks:
-      - id: pyupgrade
-        exclude: ^tests/
-        args: [ "--py39-plus", "--keep-runtime-typing" ]
-
   - repo: https://github.com/psf/black
-    rev: 25.1.0
+    rev: 26.1.0
     hooks:
       - id: black
 
   - repo: https://github.com/asottile/blacken-docs
-    rev: 1.19.1
+    rev: 1.20.0
     hooks:
       - id: blacken-docs
-        additional_dependencies: [ black ]
+        additional_dependencies: [black]
 
   - repo: https://github.com/pycqa/isort
-    rev: 6.0.1
+    rev: 7.0.0
     hooks:
       - id: isort
-        args: [ "--profile", "black", "--filter-files" ]
+        args: ["--profile", "black", "--filter-files"]
 
   - repo: local
     hooks:
@@ -51,17 +44,17 @@ repos:
         require_serial: true
         files: "tests/*.json$"
 
-#  - repo: https://github.com/aws-cloudformation/cfn-lint
-#    rev: v0.78.1
-#    hooks:
-#      - id: cfn-lint
-#        files: .cicd/.*\.(json|yml|yaml)$
+  #  - repo: https://github.com/aws-cloudformation/cfn-lint
+  #    rev: v0.78.1
+  #    hooks:
+  #      - id: cfn-lint
+  #        files: .cicd/.*\.(json|yml|yaml)$
 
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.13.1
+    rev: v2.14.0
     hooks:
       - id: hadolint-docker
-        args: [ "-t", "error" ]
+        args: ["-t", "error"]
 
   - repo: https://github.com/iamthefij/docker-pre-commit
     rev: v3.0.1

@@ -4,6 +4,7 @@
 """
 Module to handle the creation of the root EFS stack
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

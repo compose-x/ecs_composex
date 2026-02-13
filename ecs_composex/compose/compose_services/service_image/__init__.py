@@ -31,7 +31,7 @@ from .ecr_helpers import define_service_image, interpolate_ecr_uri_tag_with_dige
 
 def get_image_from_ssm_parameter(
     ssm_parameter: Parameter, session: Session = None
-) -> Union[str, None]:
+) -> str | None:
     session = get_session(session)
     client = session.client("ssm")
     try:
@@ -68,14 +68,14 @@ class ServiceImage:
             self.image = image_param
 
     @property
-    def image(self) -> Union[str, Ref]:
+    def image(self) -> str | Ref:
         if isinstance(self._image, str):
             return self._image
         elif isinstance(self._image, Parameter):
             return Ref(self._image)
 
     @image.setter
-    def image(self, value: Union[str, Parameter]):
+    def image(self, value: str | Parameter):
         if isinstance(value, str):
             self._image = value
         elif isinstance(value, Parameter):
@@ -99,11 +99,11 @@ class ServiceImage:
         return self._service
 
     @property
-    def private_ecr(self) -> Union[re.Match, None]:
+    def private_ecr(self) -> re.Match | None:
         return PRIVATE_ECR_URI_RE.match(self.image_uri)
 
     @property
-    def public_ecr(self) -> Union[re.Match, None]:
+    def public_ecr(self) -> re.Match | None:
         return PUBLIC_ECR_URI_RE.match(self.image_uri)
 
     def private_ecr_digest(self, settings: ComposeXSettings):

@@ -127,7 +127,7 @@ class ComposeFamily:
         return any([service.x_ray for service in self.services])
 
     @property
-    def service_definition(self) -> Union[None, CfnService]:
+    def service_definition(self) -> None | CfnService:
         if self.ecs_service and self.ecs_service.ecs_service:
             return self.ecs_service.ecs_service
         return None

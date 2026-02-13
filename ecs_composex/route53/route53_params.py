@@ -4,6 +4,7 @@
 """
 Module for DNS Route53 parameters
 """
+
 import re
 
 from ecs_composex.common.cfn_params import Parameter

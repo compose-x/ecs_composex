@@ -113,7 +113,7 @@ def wait_for_scan_report(
     image_url: ServiceImage,
     trigger_scan=False,
     ecr_session=None,
-) -> dict[str, Union[dict, str]]:
+) -> dict[str, dict | str]:
     """
     Function to wait for the scan report to go from In Progress to else
 

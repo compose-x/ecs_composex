@@ -67,7 +67,6 @@ pytest = ">=7.4"
 tbump = "^6.9"
 boto3-stubs = { extras = ["acm", "ecs", "cloudformation", "essential"], version = ">=1.26,<2.0" }
 pyclean = "^2.7"
-pyupgrade = "^3.8"
 
 [tool.poetry.scripts]
 ecs-compose-x = "ecs_composex.cli:main"

@@ -652,7 +652,7 @@ class XResource:
                 self.outputs.append(attr["Output"])
 
     def add_parameter_to_family_stack(
-        self, family, settings: ComposeXSettings, parameter: Union[str, Parameter]
+        self, family, settings: ComposeXSettings, parameter: str | Parameter
     ) -> dict:
         if self.stack == family.stack:
             LOG.warning(
@@ -752,7 +752,7 @@ class XResource:
                 )
 
 
-def validate_input_value(aws_property_object, property_name, value) -> Union[None, str]:
+def validate_input_value(aws_property_object, property_name, value) -> None | str:
     """Validation that input for resource property update if valid"""
     if (
         (aws_property_object is None or property_name is None or value is None)

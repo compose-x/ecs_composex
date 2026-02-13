@@ -83,7 +83,7 @@ def set_prometheus(family):
 
 
 def add_cw_agent_to_family(
-    family: ComposeFamily, emf_config: Union[bool, dict] = None, **prometheus_options
+    family: ComposeFamily, emf_config: bool | dict = None, **prometheus_options
 ):
     """
     Function to add the CW Agent to the task family for additional monitoring

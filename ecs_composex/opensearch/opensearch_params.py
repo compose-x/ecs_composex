@@ -4,6 +4,7 @@
 """
 OpenSearch parameters
 """
+
 import re
 
 from ecs_composex.common.cfn_params import Parameter

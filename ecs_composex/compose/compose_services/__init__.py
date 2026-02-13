@@ -211,7 +211,7 @@ class ComposeService:
             )
 
     @property
-    def ecs_user(self) -> Union[str, AWSHelperFn]:
+    def ecs_user(self) -> str | AWSHelperFn:
         __user = set_else_none("user", self.definition, alt_value=None)
         if not __user:
             return NoValue
@@ -279,7 +279,7 @@ class ComposeService:
         return set_else_none("resources", self.deploy, alt_value={})
 
     @property
-    def cpu_amount(self) -> Union[int, Ref]:
+    def cpu_amount(self) -> int | Ref:
         if not self._cpu_amount or self.container_start_condition in [
             "SUCCESS",
             "COMPLETE",
@@ -308,7 +308,7 @@ class ComposeService:
         return NoValue
 
     @cpu_amount.setter
-    def cpu_amount(self, value: Union[int, AWSHelperFn, None]):
+    def cpu_amount(self, value: int | AWSHelperFn | None):
         self._cpu_amount = value
 
     @property
@@ -444,7 +444,7 @@ class ComposeService:
             setattr(self.container_definition, "Essential", value)
 
     @property
-    def user_define_essential(self) -> Union[None, bool]:
+    def user_define_essential(self) -> None | bool:
         """
         Allows user to override whether a container is essential or not.
         By default, in absence of the label, service is considered essential as it might
@@ -543,7 +543,7 @@ class ComposeService:
             return int(ephemeral_storage)
 
     @property
-    def launch_type(self) -> Union[str, None]:
+    def launch_type(self) -> str | None:
         compute_key = "ecs.compute.platform"
         return set_else_none(
             compute_key,
@@ -572,7 +572,7 @@ class ComposeService:
         return set_else_none("healthcheck", self.definition, alt_value={})
 
     @property
-    def ecs_healthcheck(self) -> Union[HealthCheck, AWSHelperFn]:
+    def ecs_healthcheck(self) -> HealthCheck | AWSHelperFn:
         """
         If HealthCheck already set ContainerDefinition and value is "None" but service.healtheck defined,
         define HealthCheck() from service.healthcheck.
@@ -711,7 +711,7 @@ class ComposeService:
         return define_kernel_options(self)
 
     @property
-    def ulimits(self) -> Union[list, Ref]:
+    def ulimits(self) -> list | Ref:
         """
         Set the ulimits
         """

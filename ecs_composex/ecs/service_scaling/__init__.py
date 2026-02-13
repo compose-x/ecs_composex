@@ -5,7 +5,6 @@
 Package to help generate target scaling policies for given alarms.
 """
 
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
