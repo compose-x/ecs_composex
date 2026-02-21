@@ -24,7 +24,8 @@ try:
     from yaml import Dumper as Dumper
     from yaml import Loader as Loader
 except ImportError:
-    from yaml import CDumper as Dumper, CLoader as Loader
+    from yaml import CDumper as Dumper
+    from yaml import CLoader as Loader
 
 from botocore.exceptions import ClientError
 from cfn_flip.yaml_dumper import LongCleanDumper
@@ -175,7 +176,7 @@ class ComposeXSettings:
 
         self.upload = False if self.no_upload else True
         self.parse_command(kwargs, content)
-        self.compose_content = {}
+        self.compose_content: dict = {}
         self.original_content: dict = {}
         self.input_file = (
             kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
@@ -183,7 +184,7 @@ class ComposeXSettings:
         self.set_content(kwargs, content)
         self.set_output_settings(kwargs)
         self.evaluate_private_namespace()
-        self.name = kwargs[self.name_arg]
+        self.name = kwargs.get(self.name_arg)
         self._ecs_cluster = None
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
         self.x_resources_void = []
@@ -530,7 +531,7 @@ class ComposeXSettings:
         LOG.debug(f"Input files: {files}")
         content_def = ComposeDefinition(files, content)
         self.original_content = content_def.definition
-        self.compose_content = deepcopy(content_def.definition)
+        self.compose_content: dict = deepcopy(content_def.definition)
         source = str(pkg_files("ecs_composex").joinpath("specs/compose-spec.json"))
         LOG.debug(f"Validating against input schema {source}")
 
