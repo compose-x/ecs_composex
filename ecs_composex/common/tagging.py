@@ -20,6 +20,16 @@ otherwise you could not, i.e., *vpc::usage::ecsapps*
 
 """
 
+from __future__ import annotations
+
+from imaplib import Commands
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from troposphere import Template
+
+    from ecs_composex.common.settings import ComposeXSettings
+
 import copy
 
 from compose_x_common.compose_x_common import keyisset
@@ -37,26 +47,16 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import add_parameters
 
 
-def define_tag_parameter_title(tag_name):
+def define_tag_parameter_title(tag_name: str) -> str:
     """
     Returns the formatted name title for a given tag
-
-    :param tag_name: name of the tag as defined in the ComposeX file
-    :type tag_name: str
-    :return: reformatted tag name to work on CFN
-    :rtype: str
     """
     return f"{NONALPHANUM.sub('', tag_name).strip().title()}Tag"
 
 
-def define_extended_tags(tags):
+def define_extended_tags(tags: list | dict) -> Tags | None:
     """
     Function to generate the tags to be added to objects from x-tags
-
-    :param tags: tags as defined in composex file
-    :type tags: list or dict
-    :return: Tags() or None
-    :rtype: troposphere.Tags or None
     """
     rendered_tags = []
     if isinstance(tags, list):
@@ -72,12 +72,9 @@ def define_extended_tags(tags):
     return None
 
 
-def generate_tags_parameters(tags):
+def generate_tags_parameters(tags: list | dict) -> list[Parameter]:
     """
     Function to generate a list of parameters used for the tags values
-
-    :return: list of parameters and tags to add to objects
-    :rtype: tuple
     """
     parameters = []
     for tag in tags:
@@ -100,14 +97,9 @@ def generate_tags_parameters(tags):
     return parameters
 
 
-def expand_launch_template_tags_specs(lt, tags):
+def expand_launch_template_tags_specs(lt: LaunchTemplate, tags: Tags) -> None:
     """
     Function to expand the LaunchTemplate TagSpecifications with defined x-tags.
-
-    :param lt: the LaunchTemplate object
-    :type: troposphere.ec2.LaunchTemplate
-    :param tags: the Tags as built from x-tags
-    :type tags: troposphere.Tags
     """
     LOG.debug("Setting tags to LaunchTemplate")
     try:
@@ -169,13 +161,15 @@ def add_object_tags(obj, tags):
         setattr(obj, "Tags", clean_tags)
 
 
-def default_tags():
+def default_tags(settings: ComposeXSettings) -> Tags:
     """
     Function to return default tags to set on resource
     :return: default compose-x tags
     :rtype: troposphere.Tags
     """
-    return Tags(CreatedByComposeX=True, **{"compose-x:version": version})
+    return Tags(
+        **{"compose-x::version": version, "compose-x::project-name": settings.name}
+    )
 
 
 def apply_tags_to_resources(settings, resource, params, xtags):
@@ -203,28 +197,31 @@ def apply_tags_to_resources(settings, resource, params, xtags):
             add_object_tags(stack_resource, xtags)
 
 
-def add_all_tags(root_template, settings, params=None, xtags=None):
+def add_all_tags(
+    root_template: Template,
+    settings: ComposeXSettings,
+    params: list = None,
+    xtags: Tags = None,
+) -> None:
     """
     Function to go through all stacks of a given template and update the template
     It will recursively render sub stacks defined.
     If there are no substacks, it will go over the resources of the template add the tags.
 
-    :param troposphere.Template root_template: the root template to iterate over the resources.
-    :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
-    :param list params: Parameters to add to template if any
-    :param troposphere.Tags xtags: List of Tags to add to the resources.
     """
     if not params or not xtags:
         if not keyisset("x-tags", settings.compose_content):
-            xtags = default_tags()
+            xtags = default_tags(settings)
             params = None
         else:
             tags = settings.compose_content["x-tags"]
             params = generate_tags_parameters(tags)
             xtags = define_extended_tags(tags)
-            xtags += default_tags()
+            xtags += default_tags(settings)
 
-    resources = root_template.resources if root_template else []
-    for resource_name in resources:
-        resource = resources[resource_name]
+    resources = root_template.resources if root_template else {}
+    for resource_name, resource in resources.items():
+        LOG.debug(
+            "Applying tags to resource {}: {}".format(resource_name, type(resource))
+        )
         apply_tags_to_resources(settings, resource, params, xtags)
